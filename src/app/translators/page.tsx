@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma'
 import TranslatorSearchForm from '@/components/TranslatorSearchForm'
 import { MapPin, Users, Globe, ArrowRight, Search } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Find Translators & Interpreters | LINK Translations',
   description: 'Find certified translators and interpreters in your state. LINK Translations has 26,563 linguists across all 50 US states.',

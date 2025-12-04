@@ -3,6 +3,8 @@ import { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { Globe, FileText, Mic2, Headphones, Shield, ArrowRight } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Languages We Translate | LINK Translations',
   description: 'LINK Translations offers professional translation services in over 150 languages including Spanish, French, Portuguese, Chinese, Arabic, and more.',

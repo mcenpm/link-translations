@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { FileText, Clock, Shield, Globe, Users, Zap, CheckCircle2 } from 'lucide-react'
 import QuoteForm from '@/components/QuoteForm'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Request a Quote | LINK Translations',
   description: 'Get a free quote for professional translation, interpretation, or transcription services. Fast turnaround, competitive pricing.',
