@@ -1,6 +1,6 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { MapPin, Star, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
@@ -17,12 +17,13 @@ interface Linguist {
   averageRating?: number
 }
 
-export default function TranslatorsPage({ params }: { params: { state: string } }) {
+export default function TranslatorsPage() {
   const searchParams = useSearchParams()
+  const params = useParams()
   const [linguists, setLinguists] = useState<Linguist[]>([])
   const [loading, setLoading] = useState(true)
 
-  const state = params.state.toUpperCase()
+  const state = (params.state as string)?.toUpperCase() || ''
   const language = searchParams.get('language')
   const type = searchParams.get('type') || 'translation'
 

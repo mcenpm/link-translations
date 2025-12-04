@@ -2,19 +2,21 @@ import type { Metadata } from 'next'
 import TranslatorsPageContent from './page'
 
 interface Props {
-  params: { state: string }
+  params: Promise<{ state: string }>
+  children: React.ReactNode
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const state = params.state.toUpperCase()
+export async function generateMetadata({ params }: { params: Promise<{ state: string }> }): Promise<Metadata> {
+  const { state } = await params
+  const stateUpper = state.toUpperCase()
   
   return {
-    title: `Professional Translators in ${state} | Link Translations`,
-    description: `Find professional translators and interpreters in ${state}. Expert linguists for business translation services.`,
-    keywords: `translators ${state}, interpreters ${state}, translation services, professional linguists`,
+    title: `Professional Translators in ${stateUpper} | Link Translations`,
+    description: `Find professional translators and interpreters in ${stateUpper}. Expert linguists for business translation services.`,
+    keywords: `translators ${stateUpper}, interpreters ${stateUpper}, translation services, professional linguists`,
   }
 }
 
-export default function Page({ params }: Props) {
-  return <TranslatorsPageContent params={params} />
+export default async function Layout({ params, children }: Props) {
+  return <>{children}</>
 }
