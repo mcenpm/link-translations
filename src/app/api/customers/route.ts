@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
           email,
           firstName: firstName || '',
           role: 'CUSTOMER',
-          passwordHash: '', // Will be set via reset link
+          password: '', // Will be set via reset link
         },
       })
       userId = user.id
