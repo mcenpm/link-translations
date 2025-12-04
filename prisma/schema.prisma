@@ -7,7 +7,294 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String
+  role      UserRole
+  firstName String?
+  lastName  String?
+  phone     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  customer  Customer?
+  linguist  Linguist?
+
+  @@index([email])
+}
+
+model Customer {
+  id              String            @id @default(cuid())
+  userId          String            @unique
+  company         String
+  website         String?
+  industry        String?
+  billingAddress  String?
+  billingCity     String?
+  billingState    String?
+  billingZip      String?
+  billingCountry  String?
+  shippingAddress String?
+  shippingCity    String?
+  shippingState   String?
+  shippingZip     String?
+  shippingCountry String?
+  taxId           String?
+  paymentTerms    String?
+  creditLimit     Float?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contacts        CustomerContact[]
+  invoices        Invoice[]
+  orders          Order[]
+  quotes          Quote[]
+
+  @@index([userId])
+}
+
+model CustomerContact {
+  id         String   @id @default(cuid())
+  customerId String
+  firstName  String
+  lastName   String
+  title      String?
+  email      String
+  phone      String?
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+}
+
+model Language {
+  id                  String             @id @default(cuid())
+  code                String             @unique
+  name                String
+  nativeName          String?
+  createdAt           DateTime           @default(now())
+  sourceLanguagePairs LanguagePair[]     @relation("sourceLanguage")
+  targetLanguagePairs LanguagePair[]     @relation("targetLanguage")
+  linguistLanguages   LinguistLanguage[]
+
+  @@index([code])
+}
+
+model LanguagePair {
+  id               String       @id @default(cuid())
+  sourceLanguageId String
+  targetLanguageId String
+  ratePerWord      Float
+  minimumCharge    Float
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  assignments      Assignment[]
+  sourceLanguage   Language     @relation("sourceLanguage", fields: [sourceLanguageId], references: [id], onDelete: Cascade)
+  targetLanguage   Language     @relation("targetLanguage", fields: [targetLanguageId], references: [id], onDelete: Cascade)
+  quotes           Quote[]
+
+  @@unique([sourceLanguageId, targetLanguageId])
+  @@index([sourceLanguageId, targetLanguageId])
+}
+
+model Linguist {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  dateOfBirth          DateTime?
+  gender               String?
+  address              String?
+  city                 String?
+  state                String?
+  zipCode              String?
+  country              String?
+  bio                  String?
+  experience           Int?
+  specializations      String?
+  education            String?
+  certifications       String?
+  defaultRatePerWord   Float?
+  defaultMinimumCharge Float?
+  isActive             Boolean            @default(true)
+  isVerified           Boolean            @default(false)
+  verificationDate     DateTime?
+  portfolioUrl         String?
+  portfolioItems       String?
+  totalQuotesCompleted Int                @default(0)
+  averageRating        Float?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  assignments          Assignment[]
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  languages            LinguistLanguage[]
+
+  @@index([state])
+  @@index([isActive])
+  @@index([isVerified])
+}
+
+model LinguistLanguage {
+  id                String        @id @default(cuid())
+  linguistId        String
+  languageId        String
+  level             LanguageLevel
+  discipline        Discipline
+  ratePerWord       Float?
+  minimumCharge     Float?
+  yearsOfExperience Int?
+  certifications    String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  language          Language      @relation(fields: [languageId], references: [id])
+  linguist          Linguist      @relation(fields: [linguistId], references: [id], onDelete: Cascade)
+
+  @@unique([linguistId, languageId])
+  @@index([linguistId])
+  @@index([languageId])
+}
+
+model State {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  @@index([code])
+  @@index([slug])
+}
+
+model Quote {
+  id                    String       @id @default(cuid())
+  quoteNumber           String       @unique
+  customerId            String
+  languagePairId        String
+  status                QuoteStatus  @default(DRAFT)
+  description           String?
+  sourceLanguage        String
+  targetLanguage        String
+  wordCount             Float?
+  unitOfIssue           String?
+  ratePerUnit           Float
+  minimumCharge         Float
+  subtotal              Float?
+  tax                   Float?
+  total                 Float?
+  requestedDeliveryDate DateTime?
+  actualDeliveryDate    DateTime?
+  notes                 String?
+  internalNotes         String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  assignments           Assignment[]
+  orders                Order[]
+  customer              Customer     @relation(fields: [customerId], references: [id])
+  languagePair          LanguagePair @relation(fields: [languagePairId], references: [id])
+
+  @@index([customerId])
+  @@index([status])
+  @@index([quoteNumber])
+}
+
+model Order {
+  id          String       @id @default(cuid())
+  orderNumber String       @unique
+  quoteId     String
+  customerId  String
+  status      OrderStatus  @default(PENDING)
+  subtotal    Float
+  tax         Float?
+  total       Float
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  completedAt DateTime?
+  assignments Assignment[]
+  invoice     Invoice?
+  customer    Customer     @relation(fields: [customerId], references: [id])
+  quote       Quote        @relation(fields: [quoteId], references: [id])
+
+  @@index([customerId])
+  @@index([status])
+  @@index([orderNumber])
+}
+
+model Assignment {
+  id             String           @id @default(cuid())
+  orderId        String
+  quoteId        String?
+  linguistId     String
+  languagePairId String
+  status         AssignmentStatus @default(PENDING)
+  assignedAt     DateTime         @default(now())
+  acceptedAt     DateTime?
+  declinedAt     DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  notes          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  languagePair   LanguagePair     @relation(fields: [languagePairId], references: [id])
+  linguist       Linguist         @relation(fields: [linguistId], references: [id])
+  order          Order            @relation(fields: [orderId], references: [id])
+  quote          Quote?           @relation(fields: [quoteId], references: [id])
+
+  @@unique([orderId, linguistId])
+  @@index([orderId])
+  @@index([linguistId])
+  @@index([status])
+}
+
+model Invoice {
+  id            String    @id @default(cuid())
+  invoiceNumber String    @unique
+  orderId       String    @unique
+  customerId    String
+  subtotal      Float
+  tax           Float?
+  total         Float
+  issueDate     DateTime  @default(now())
+  dueDate       DateTime
+  paidAt        DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  customer      Customer  @relation(fields: [customerId], references: [id])
+  order         Order     @relation(fields: [orderId], references: [id])
+  payments      Payment[]
+
+  @@index([customerId])
+  @@index([invoiceNumber])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  invoiceId     String
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  method        String?
+  transactionId String?
+  processedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  invoice       Invoice       @relation(fields: [invoiceId], references: [id])
+
+  @@index([invoiceId])
+  @@index([transactionId])
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  action     String
+  entityType String
+  entityId   String
+  changes    String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([action])
+}
+
 enum UserRole {
   ADMIN
   CUSTOMER
@@ -67,383 +354,4 @@ enum AssignmentStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
-}
-
-// Core Users
-model User {
-  id                    String    @id @default(cuid())
-  email                 String    @unique
-  password              String
-  role                  UserRole
-  firstName             String?
-  lastName              String?
-  phone                 String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-
-  // Relations
-  customer              Customer?
-  linguist              Linguist?
-  
-  @@index([email])
-}
-
-// Customers (from Sugar CRM accounts)
-model Customer {
-  id                    String    @id @default(cuid())
-  userId                String    @unique
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  company               String
-  website               String?
-  industry              String?
-  
-  billingAddress        String?
-  billingCity           String?
-  billingState          String?
-  billingZip            String?
-  billingCountry        String?
-  
-  shippingAddress       String?
-  shippingCity          String?
-  shippingState         String?
-  shippingZip           String?
-  shippingCountry       String?
-  
-  taxId                 String?
-  paymentTerms          String?
-  creditLimit           Float?
-  
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  
-  // Relations
-  quotes                Quote[]
-  orders                Order[]
-  invoices              Invoice[]
-  contacts              CustomerContact[]
-  
-  @@index([userId])
-}
-
-model CustomerContact {
-  id                    String    @id @default(cuid())
-  customerId            String
-  customer              Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  
-  firstName             String
-  lastName              String
-  title                 String?
-  email                 String
-  phone                 String?
-  isPrimary             Boolean   @default(false)
-  
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  
-  @@index([customerId])
-}
-
-// Languages
-model Language {
-  id                    String    @id @default(cuid())
-  code                  String    @unique // ISO 639-1
-  name                  String
-  nativeName            String?
-  
-  createdAt             DateTime  @default(now())
-  
-  // Relations
-  sourceLanguagePairs   LanguagePair[] @relation("sourceLanguage")
-  targetLanguagePairs   LanguagePair[] @relation("targetLanguage")
-  linguistLanguages     LinguistLanguage[]
-  
-  @@index([code])
-}
-
-model LanguagePair {
-  id                    String    @id @default(cuid())
-  sourceLanguageId      String
-  sourceLanguage        Language  @relation("sourceLanguage", fields: [sourceLanguageId], references: [id], onDelete: Cascade)
-  
-  targetLanguageId      String
-  targetLanguage        Language  @relation("targetLanguage", fields: [targetLanguageId], references: [id], onDelete: Cascade)
-  
-  ratePerWord           Float     // $0.16 - $0.28
-  minimumCharge         Float     // $25 - $35
-  
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  
-  // Relations
-  quotes                Quote[]
-  assignments           Assignment[]
-  
-  @@unique([sourceLanguageId, targetLanguageId])
-  @@index([sourceLanguageId, targetLanguageId])
-}
-
-// Linguists (from WordPress users + wp_usermeta)
-model Linguist {
-  id                    String    @id @default(cuid())
-  userId                String    @unique
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Personal Info
-  dateOfBirth           DateTime?
-  gender                String?
-  
-  // Location
-  address               String?
-  city                  String?
-  state                 String?      // 50 US states
-  zipCode               String?
-  country               String?
-  
-  // Professional
-  bio                   String?
-  experience            Int?        // years
-  specializations       String?     // JSON or comma-separated
-  education             String?
-  certifications        String?
-  
-  // Rates (default rates, can be overridden per language pair)
-  defaultRatePerWord    Float?
-  defaultMinimumCharge  Float?
-  
-  // Status
-  isActive              Boolean   @default(true)
-  isVerified            Boolean   @default(false)
-  verificationDate      DateTime?
-  
-  // Portfolio
-  portfolioUrl          String?
-  portfolioItems        String?   // JSON array of portfolio URLs
-  
-  // Stats
-  totalQuotesCompleted  Int       @default(0)
-  averageRating         Float?
-  
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  
-  // Relations
-  languages             LinguistLanguage[]
-  assignments           Assignment[]
-  
-  @@index([state])
-  @@index([isActive])
-  @@index([isVerified])
-}
-
-model LinguistLanguage {
-  id                    String    @id @default(cuid())
-  linguistId            String
-  linguist              Linguist  @relation(fields: [linguistId], references: [id], onDelete: Cascade)
-  
-  languageId            String
-  language              Language  @relation(fields: [languageId], references: [id])
-  
-  level                 LanguageLevel
-  discipline            Discipline
-  
-  ratePerWord           Float?    // Override default
-  minimumCharge         Float?    // Override default
-  
-  yearsOfExperience     Int?
-  certifications        String?
-  
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  
-  @@unique([linguistId, languageId])
-  @@index([linguistId])
-  @@index([languageId])
-}
-
-// States (for US-based URL structure)
-model State {
-  id                    String    @id @default(cuid())
-  code                  String    @unique // e.g., "AL", "NY"
-  name                  String    @unique // e.g., "Alabama", "New York"
-  slug                  String    @unique // e.g., "alabama", "new-york"
-  
-  createdAt             DateTime  @default(now())
-  
-  @@index([code])
-  @@index([slug])
-}
-
-// Quotes (from Sugar CRM quotes table)
-model Quote {
-  id                    String    @id @default(cuid())
-  quoteNumber           String    @unique
-  customerId            String
-  customer              Customer  @relation(fields: [customerId], references: [id])
-  
-  languagePairId        String
-  languagePair          LanguagePair @relation(fields: [languagePairId], references: [id])
-  
-  status                QuoteStatus @default(DRAFT)
-  
-  // Quote Details
-  description           String?
-  sourceLanguage        String
-  targetLanguage        String
-  wordCount             Float?
-  
-  // Pricing
-  unitOfIssue           String?   // e.g., "word", "hour", "page"
-  ratePerUnit           Float
-  minimumCharge         Float
-  subtotal              Float?
-  tax                   Float?
-  total                 Float?
-  
-  // Timeline
-  requestedDeliveryDate DateTime?
-  actualDeliveryDate    DateTime?
-  
-  // Notes
-  notes                 String?
-  internalNotes         String?
-  
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  
-  // Relations
-  orders                Order[]
-  assignments           Assignment[]
-  
-  @@index([customerId])
-  @@index([status])
-  @@index([quoteNumber])
-}
-
-// Orders (from quotes that are accepted/paid)
-model Order {
-  id                    String    @id @default(cuid())
-  orderNumber           String    @unique
-  quoteId               String
-  quote                 Quote     @relation(fields: [quoteId], references: [id])
-  
-  customerId            String
-  customer              Customer  @relation(fields: [customerId], references: [id])
-  
-  status                OrderStatus @default(PENDING)
-  
-  subtotal              Float
-  tax                   Float?
-  total                 Float
-  
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  completedAt           DateTime?
-  
-  // Relations
-  invoice               Invoice?
-  assignments           Assignment[]
-  
-  @@index([customerId])
-  @@index([status])
-  @@index([orderNumber])
-}
-
-// Assignments (linguist assignment to orders/quotes)
-model Assignment {
-  id                    String    @id @default(cuid())
-  orderId               String
-  order                 Order     @relation(fields: [orderId], references: [id])
-  
-  quoteId               String?
-  quote                 Quote?    @relation(fields: [quoteId], references: [id])
-  
-  linguistId            String
-  linguist              Linguist  @relation(fields: [linguistId], references: [id])
-  
-  languagePairId        String
-  languagePair          LanguagePair @relation(fields: [languagePairId], references: [id])
-  
-  status                AssignmentStatus @default(PENDING)
-  
-  // Assignment details
-  assignedAt            DateTime  @default(now())
-  acceptedAt            DateTime?
-  declinedAt            DateTime?
-  startedAt             DateTime?
-  completedAt           DateTime?
-  
-  notes                 String?
-  
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  
-  @@unique([orderId, linguistId])
-  @@index([orderId])
-  @@index([linguistId])
-  @@index([status])
-}
-
-// Invoices
-model Invoice {
-  id                    String    @id @default(cuid())
-  invoiceNumber         String    @unique
-  orderId               String    @unique
-  order                 Order     @relation(fields: [orderId], references: [id])
-  
-  customerId            String
-  customer              Customer  @relation(fields: [customerId], references: [id])
-  
-  subtotal              Float
-  tax                   Float?
-  total                 Float
-  
-  issueDate             DateTime  @default(now())
-  dueDate               DateTime
-  paidAt                DateTime?
-  
-  notes                 String?
-  
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  
-  // Relations
-  payments              Payment[]
-  
-  @@index([customerId])
-  @@index([invoiceNumber])
-}
-
-// Payments
-model Payment {
-  id                    String    @id @default(cuid())
-  invoiceId             String
-  invoice               Invoice   @relation(fields: [invoiceId], references: [id])
-  
-  amount                Float
-  status                PaymentStatus @default(PENDING)
-  method                String?   // "stripe", "bank", "check", etc.
-  transactionId         String?
-  
-  processedAt           DateTime?
-  
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  
-  @@index([invoiceId])
-  @@index([transactionId])
-}
-
-// Audit/Activity Log
-model ActivityLog {
-  id                    String    @id @default(cuid())
-  action                String
-  entityType            String
-  entityId              String
-  changes               String?   // JSON
-  
-  createdAt             DateTime  @default(now())
-  
-  @@index([entityType, entityId])
-  @@index([action])
 }

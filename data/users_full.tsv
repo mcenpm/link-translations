@@ -1,0 +1,63 @@
+Warning: Using a password on the command line interface can be insecure.
+id	user_name	first_name	last_name	title	phone_work	phone_mobile	status	is_admin	date_entered
+1	admin	NULL	Administrator	Administrator	NULL	NULL	Active	1	2010-03-16 18:25:21
+9fb0faee-a916-b143-b782-4ba17e421d8a	Evren	Evren	Ay	President	1-646-571-1241	(212) 920-4378	Active	1	2010-03-18 01:13:58
+97bfff6d-90fb-193c-77e2-4ba138a3249b	Cem	Cem	Ufakacar	IT	NULL	NULL	Inactive	1	2010-03-17 20:15:14
+9d13131a-7d70-284f-b743-4ba23d45aff1	NULL	Hasan	Alkan	Project Manager	103	(201) 270-7257	Inactive	0	2010-03-18 14:51:08
+a0f76e1f-db63-5d2a-802a-4ba23e23be2a	Oz	Oz	Oktem	Translator	NULL	+306948421077	Inactive	0	2010-03-18 14:53:22
+3c0cbda4-0d38-df85-ec07-4ba278db05c8	Hasan	Hasan	Alkan	Project Manager	1-646-571-1243	201-270-7257	Inactive	1	2010-03-18 18:59:25
+4da88884-f550-5eb9-1380-4ba665f8114f	importer	NULL	importer	NULL	NULL	NULL	Active	0	2010-03-21 18:29:23
+9024a639-951c-aaad-a3bf-4ba6de36ab47	webuser	NULL	Link-Translations	NULL	NULL	NULL	Active	1	2010-03-22 03:05:15
+725cc069-62fc-b7f2-cdcb-4bbe6827ae64	Alev	Alev	Ozkan	Project Manager	212-697-0509 ext104	631-413-6320	Inactive	0	2010-04-08 23:36:14
+b88f60e6-589c-f199-3a03-4bc4b241db56	test pm	NULL	pm	NULL	NULL	NULL	Inactive	0	2010-04-13 18:07:02
+9065a72b-7073-a845-f755-4bcb4f9d44cd	sugardev	NULL	sugardev	NULL	NULL	NULL	Inactive	1	2010-04-18 18:28:40
+857e4314-a49a-aa73-c322-4bd0b4b1ab6d	Hande	Hande	Altug-Sangar	Head of Interpretation Department	1-617-874-4405	781-325-5067	Inactive	0	2010-04-22 20:40:28
+9815798f-c685-e8bd-bf1e-4bfc1f2baa3a	neslihan	Neslihan	Torgut	Project Manager	212-697-0509 ext 104	646-262-3228	Inactive	0	2010-05-25 19:06:40
+5262de67-3e7e-5d5b-46d8-4bfdc9b38a90	Tony	Tony	Fancher	IT	NULL	NULL	Inactive	1	2010-05-27 01:21:19
+c125dd9c-b005-c674-b37a-4ca4e0cd36dd	Sherin	Sherin	Demian	NULL	105	646-322-1086	Inactive	0	2010-09-30 19:07:54
+a524123f-7080-34b6-4c80-4da5e16151aa	anwar	Anwar	Allen	NULL	NULL	240-751-8577	Inactive	1	2011-04-13 17:45:35
+e61ff030-d8a6-2a66-4d5a-4e0be5879572	Ayda	Ayda	Halce	Office Manager	104	347.575.7282	Inactive	0	2011-06-30 02:51:17
+4ae4f5c2-afa4-2a2d-2bfa-4e132163a84b	Selin	Selin	Cayirli	NULL	1-646-571-1246	19177033069	Inactive	0	2011-07-05 14:38:08
+5daf4004-7426-b572-b265-4e2d6ef8af2d	Linda	Linda	Lin	Project Manager	1-646-571-1245	(541) 968-6208	Inactive	0	2011-07-25 13:25:11
+3bcf867a-ab2b-d65a-e323-4e56620e3f23	feride	Feride	Buyuran	Project Manager	1-310-847-7001	(562) 899-1106	Inactive	0	2011-08-25 14:55:59
+796ca115-3b58-4ce9-0c9b-4e8f4529299c	nicolas	Nicolas	Dolo	CEO	NULL	+33612429907	Inactive	0	2011-10-07 18:32:40
+22c8ec93-9614-016a-f788-4ecfd1abad38	Francois	Francois	Dindon	Project Manager	NULL	NULL	Inactive	0	2011-11-25 17:35:33
+15400838-66aa-8bf7-e92d-4ed6545edb89	Laurent	NULL	Evren	NULL	NULL	NULL	Inactive	0	2011-11-30 16:07:48
+24822a48-393c-57dc-4ada-4f3447807bd6	ruben	Ruben	Cagnie	NULL	NULL	NULL	Inactive	1	2012-02-09 22:25:47
+66003ae1-25f2-c246-8aeb-4f67a161286f	deniz	Deniz	Hotamisligil	NULL	NULL	NULL	Inactive	0	2012-03-19 21:13:15
+96bbf2f7-c92a-5d16-08b5-4ffd9c5a4707	saket	Saket	Prodi	NULL	NULL	NULL	Inactive	1	2012-07-11 15:34:00
+2ba8065f-c6d5-59df-7e61-5046a0dd8a02	trwebuser	NULL	trwebuser	Administrator	NULL	NULL	Inactive	1	2012-09-05 00:44:22
+65940e54-e0e0-da3c-1917-504773a7124b	tennile	Tennile	Palmer Aiken	Government Contracts Mana	NULL	NULL	Inactive	0	2012-09-05 15:46:16
+1dfb4acd-2f9a-6eae-06b5-5058894c00f1	asia	Asia	Lindsay	Project Management Intern	107	917-847-0637	Inactive	0	2012-09-18 14:48:33
+707e29ea-71c3-dfad-3e2d-5060a2ed0b5b	francisca	Francisca	Crous Alegria	NULL	NULL	NULL	Inactive	1	2012-09-24 18:12:59
+5b043f50-d566-5d70-090b-50943a3f920e	chad	Chad	Orr	VP	6465711245	NULL	Inactive	0	2012-11-02 21:25:11
+37ed9117-d0ac-65a3-5ccf-50993860a336	gulen	Gulen	Oktar	NULL	NULL	NULL	Inactive	0	2012-11-06 16:18:41
+1c010740-bf2b-6f02-60f3-50aa6396bbea	elif	Elif	Saglik	NULL	NULL	NULL	Inactive	0	2012-11-19 16:52:57
+3ebe26f5-e56d-aa7e-40ba-50ca0ccdf314	momentum	Satinder	Singh	Satinder Singh Title	NULL	NULL	Inactive	1	2012-12-13 17:14:03
+26e8f2ad-6e31-56c0-e244-511008cbae58	alina	Alina	Balean	Project Manager	NULL	NULL	Inactive	0	2013-02-04 19:14:08
+8920b7e2-32a9-32f4-c277-515dceeb85ed	oytuntez	Oytun	Tez	IT developer	NULL	+90 507 5015734	Active	1	2013-04-04 19:03:57
+b9d389ce-afe9-b139-74e0-515dce62ed50	oytun	Oytun	Tez	NULL	NULL	NULL	Active	1	2013-04-04 19:05:03
+25f00fb2-7e1a-24cc-3e6a-51a76ad687a6	ozan	Ozan	Sevindik	NULL	NULL	NULL	Inactive	0	2013-05-30 15:02:55
+1bcae6e8-6ca9-5690-7c5d-52332f55a211	bekir	Bekir	Diri	PM	NULL	NULL	Inactive	0	2013-09-13 15:31:21
+a7215434-abda-0dd7-4263-5238b63ca759	irem	Irem	Alkut	NULL	NULL	NULL	Inactive	0	2013-09-17 20:09:19
+6eb9ff9f-36aa-098e-0c9c-528be5f81210	ceylan	Ceylan	Yazar	Customer Relations	NULL	NULL	Inactive	0	2013-11-19 22:24:50
+ec6b2d5b-542f-a954-927c-5452221ba3d7	eda	Eski Eda	Öztürk	NULL	NULL	NULL	Inactive	0	2014-10-30 11:34:42
+1fb5e20f-fd33-05e8-ced3-555cd737d76c	paul	Paul	Rodriguez	Project Manager	NULL	NULL	Inactive	0	2015-05-20 18:49:34
+9cf4ab30-6497-a3c6-07b0-56d45a8a5d40	oguzcan	Oguzcan	Yildirim	NULL	NULL	NULL	Inactive	0	2016-02-29 14:47:43
+85a49d99-c5b6-b5fb-2ecf-579a3dc70891	edagokbay	Eda	Gokbay	NULL	NULL	NULL	Inactive	1	2016-07-28 17:14:58
+86f7d532-8e3c-d094-2dfa-58013fdcf148	feyza	Feyza	Turan	NULL	NULL	NULL	Inactive	0	2016-10-14 20:28:25
+2b001821-b711-135b-72f8-58220b99ab6f	secil	Secil	Karadag	NULL	NULL	NULL	Inactive	0	2016-11-08 17:30:18
+7c0691c4-ca48-f5d7-953a-58c1c46e5782	nazlitecimer	Nazli	Tecimer	NULL	NULL	NULL	Inactive	0	2017-03-09 21:09:18
+d9f1ac81-1944-3047-9f5b-59477e18f437	muge	Muge	Ornek	NULL	NULL	NULL	Inactive	0	2017-06-19 07:33:15
+4cebdad8-5c7b-cdad-bd11-595ecaa2b446	halil	Halil	Yigit	NULL	NULL	NULL	Inactive	1	2017-07-06 23:40:32
+736b6b4e-606d-d3fa-1dda-59b68d150b3c	asli	Asli	Ay	NULL	9173746837	9173746837	Inactive	0	2017-09-11 13:20:06
+952fe0d9-9244-086a-dbee-59bf77f68232	Goksu	Goksu	Kokturk	NULL	NULL	NULL	Inactive	0	2017-09-18 07:35:45
+e29fee25-83a2-15d0-facd-5b61ca05686b	alicaglar 	Ali	Caglar	NULL	NULL	NULL	Active	0	2018-08-01 14:58:12
+e6bee778-82f0-f25c-d3aa-6061f5b2cb80	vinicius	Vinicius	Guedes	Project Manager	NULL	NULL	Inactive	0	2021-03-29 15:44:17
+eb1a54ab-3570-b51d-d3bc-608051f085c1	mcengiz	Mustafa	Cengiz	Senior Project Manager	NULL	NULL	Active	1	2021-04-21 16:24:25
+3f939db5-9e8a-d1f0-a7c5-6137402814ac	rolustech	rolustech	rolustech	NULL	NULL	NULL	Active	1	2021-09-07 10:34:15
+52483649-9fbb-e32b-c853-6217a0990e9c	banuoruc	Banu	Oruc	NULL	NULL	NULL	Active	1	2022-02-24 15:11:54
+873300f1-4882-3423-c23a-6241b06d4798	aslikarabulut	Asli Merve	Karabulut	Project Manager	6465858400	NULL	Inactive	0	2022-03-28 12:56:00
+be3a37e2-653a-1e24-e213-63b33caa9b20	baran	Baran	Kavusturucu	NULL	NULL	NULL	Active	0	2023-01-02 20:19:30
+55d48405-a8a7-f4a3-9c10-6669a9cec14b	alpkardes	Alp	Kardes	NULL	NULL	NULL	Active	1	2024-06-12 13:59:34
+3b94c9e5-91c1-59e7-f38a-681fd22a5ba1	oytun1	oytun	tez	NULL	NULL	NULL	Active	1	2025-05-10 22:27:24

@@ -68,27 +68,41 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const customerId = searchParams.get('customerId')
+    const limit = parseInt(searchParams.get('limit') || '50')
+    const page = parseInt(searchParams.get('page') || '1')
+    const skip = (page - 1) * limit
 
-    if (!customerId) {
-      return NextResponse.json({ error: 'customerId is required' }, { status: 400 })
-    }
+    const where = customerId ? { customerId } : {}
 
-    const quotes = await prisma.quote.findMany({
-      where: { customerId },
-      include: {
-        languagePair: {
-          include: {
-            sourceLanguage: true,
-            targetLanguage: true,
+    const [quotes, total] = await Promise.all([
+      prisma.quote.findMany({
+        where,
+        include: {
+          customer: {
+            include: {
+              user: { select: { firstName: true, lastName: true, email: true } }
+            }
+          },
+          languagePair: {
+            include: {
+              sourceLanguage: true,
+              targetLanguage: true,
+            },
           },
         },
-        orders: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.quote.count({ where })
+    ])
 
-    return NextResponse.json(quotes)
+    return NextResponse.json({
+      data: quotes,
+      pagination: { total, page, limit, pages: Math.ceil(total / limit) }
+    })
   } catch (error) {
+    console.error('Fetch quotes error:', error)
     return NextResponse.json({ error: 'Failed to fetch quotes' }, { status: 500 })
   }
 }

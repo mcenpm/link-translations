@@ -1,11 +1,75 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, UserRole } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
 async function main() {
   // Clear existing data
+  await prisma.quote.deleteMany()
+  await prisma.customer.deleteMany()
+  await prisma.linguist.deleteMany()
+  await prisma.user.deleteMany()
+  await prisma.languagePair.deleteMany()
   await prisma.state.deleteMany()
   await prisma.language.deleteMany()
+
+  // Create test users
+  const hashedPassword = await bcrypt.hash('password123', 10)
+
+  // Admin user
+  const adminUser = await prisma.user.create({
+    data: {
+      email: 'admin@linktranslations.com',
+      password: hashedPassword,
+      role: UserRole.ADMIN,
+      firstName: 'Admin',
+      lastName: 'User',
+      phone: '1-877-272-5465',
+    },
+  })
+  console.log(`✅ Created admin user: ${adminUser.email}`)
+
+  // Customer user
+  const customerUser = await prisma.user.create({
+    data: {
+      email: 'customer@example.com',
+      password: hashedPassword,
+      role: UserRole.CUSTOMER,
+      firstName: 'John',
+      lastName: 'Doe',
+      phone: '555-123-4567',
+      customer: {
+        create: {
+          company: 'Acme Corporation',
+          industry: 'Technology',
+        },
+      },
+    },
+  })
+  console.log(`✅ Created customer user: ${customerUser.email}`)
+
+  // Linguist user
+  const linguistUser = await prisma.user.create({
+    data: {
+      email: 'linguist@example.com',
+      password: hashedPassword,
+      role: UserRole.LINGUIST,
+      firstName: 'Maria',
+      lastName: 'Garcia',
+      phone: '555-987-6543',
+      linguist: {
+        create: {
+          bio: 'Professional certified translator with 10+ years of experience.',
+          experience: 10,
+          isActive: true,
+          isVerified: true,
+        },
+      },
+    },
+  })
+  console.log(`✅ Created linguist user: ${linguistUser.email}`)
+
+  // Seed US States
 
   // Seed US States
   const states = [

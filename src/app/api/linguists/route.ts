@@ -48,6 +48,9 @@ export async function GET(request: Request) {
       prisma.linguist.findMany({
         where,
         include: {
+          user: {
+            select: { id: true, email: true, firstName: true, lastName: true, phone: true }
+          },
           languages: {
             include: {
               language: true,
@@ -56,7 +59,7 @@ export async function GET(request: Request) {
         },
         skip,
         take: limit,
-        orderBy: { averageRating: 'desc' },
+        orderBy: { createdAt: 'desc' },
       }),
       prisma.linguist.count({ where }),
     ])
