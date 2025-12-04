@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     const customer = await prisma.customer.upsert({
       where: { userId },
       update: {
-        companyName,
+        company: companyName,
         website,
         taxId,
         billingAddress,
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       },
       create: {
         userId,
-        companyName,
+        company: companyName,
         website,
         taxId,
         billingAddress,
