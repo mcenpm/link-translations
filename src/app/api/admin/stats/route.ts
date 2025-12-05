@@ -15,7 +15,7 @@ export async function GET() {
     ] = await Promise.all([
       prisma.customer.count(),
       prisma.linguist.count(),
-      prisma.quote.count({ where: { status: 'SUBMITTED' } }),
+      prisma.quote.count({ where: { status: 'QUOTE_SENT' } }),
       prisma.quote.count(),
       prisma.quote.findMany({
         take: 5,
@@ -52,9 +52,9 @@ export async function GET() {
       })
     ])
 
-    // Calculate total revenue from completed quotes
+    // Calculate total revenue from paid quotes
     const completedQuotes = await prisma.quote.findMany({
-      where: { status: 'COMPLETED' },
+      where: { status: 'INVOICE_PAID' },
       select: { total: true }
     })
     const totalRevenue = completedQuotes.reduce((sum, q) => sum + (q.total || 0), 0)

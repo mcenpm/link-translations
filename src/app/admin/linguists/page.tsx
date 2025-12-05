@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 interface Linguist {
   id: string
@@ -101,8 +102,8 @@ export default function AdminLinguistsPage() {
               </thead>
               <tbody>
                 {paginatedLinguists.map((linguist) => (
-                  <tr key={linguist.id} className="border-b hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-gray-900 font-medium">
+                  <tr key={linguist.id} className="border-b hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => window.location.href = `/admin/linguists/${linguist.id}`}>
+                    <td className="px-6 py-4 text-sm text-blue-600 hover:underline font-medium">
                       {linguist.user?.firstName || '-'} {linguist.user?.lastName || ''}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">{linguist.user?.email || '-'}</td>
@@ -122,8 +123,8 @@ export default function AdminLinguistsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <button className="text-blue-600 hover:text-blue-800 mr-4">Edit</button>
-                      <button className="text-red-600 hover:text-red-800">Deactivate</button>
+                      <Link href={`/admin/linguists/${linguist.id}`} className="text-blue-600 hover:text-blue-800 mr-4" onClick={(e) => e.stopPropagation()}>View</Link>
+                      <button className="text-red-600 hover:text-red-800" onClick={(e) => e.stopPropagation()}>Deactivate</button>
                     </td>
                   </tr>
                 ))}

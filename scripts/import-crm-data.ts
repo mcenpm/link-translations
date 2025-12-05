@@ -26,7 +26,10 @@ interface QuoteRow {
   number: string
   name: string
   billing_account_id: string
-  approval_status: string
+  stage: string
+  total_amount: string
+  subtotal_amount: string
+  tax_amount: string
   date_entered: string
 }
 
@@ -89,20 +92,21 @@ function mapState(state: string): string | null {
   return stateMap[state] || null
 }
 
-function mapQuoteStatus(status: string): QuoteStatus {
+function mapQuoteStatus(stage: string): QuoteStatus {
   const statusMap: Record<string, QuoteStatus> = {
-    'Pending Approval': QuoteStatus.SUBMITTED,
-    'Approved': QuoteStatus.ACCEPTED,
-    'Rejected': QuoteStatus.REJECTED,
-    'Invoice Paid': QuoteStatus.PAID,
-    'Invoiced': QuoteStatus.COMPLETED,
-    'In Progress': QuoteStatus.IN_PROGRESS,
-    'Completed': QuoteStatus.COMPLETED,
-    'Cancelled': QuoteStatus.CANCELLED,
     'Draft': QuoteStatus.DRAFT,
+    'Quote Sent': QuoteStatus.QUOTE_SENT,
+    'Negotiation/Review': QuoteStatus.NEGOTIATION_REVIEW,
+    'Follow Up': QuoteStatus.FOLLOW_UP,
+    'Invoice Paid': QuoteStatus.INVOICE_PAID,
+    'Invoice Not Paid': QuoteStatus.INVOICE_NOT_PAID,
+    'Rejected due to Price': QuoteStatus.REJECTED_PRICE,
+    'Rejected (Other)': QuoteStatus.REJECTED_OTHER,
+    'Refund': QuoteStatus.REFUND,
+    'Bad Debt': QuoteStatus.BAD_DEBT,
   }
   
-  return statusMap[status] || QuoteStatus.SUBMITTED
+  return statusMap[stage] || QuoteStatus.DRAFT
 }
 
 async function importCustomers() {
@@ -190,7 +194,7 @@ async function importCustomers() {
 async function importQuotes(customerIdMap: Map<string, string>) {
   console.log('📦 Importing quotes...')
   
-  const dataPath = path.join(__dirname, '../data/quotes.tsv')
+  const dataPath = path.join(__dirname, '../data/quotes_new.tsv')
   const quotes = parseTSV<QuoteRow>(dataPath)
   
   let imported = 0
@@ -228,12 +232,15 @@ async function importQuotes(customerIdMap: Map<string, string>) {
           customerId,
           quoteNumber,
           description: quote.name || 'Imported Quote',
-          status: mapQuoteStatus(quote.approval_status),
+          status: mapQuoteStatus(quote.stage),
           sourceLanguage: 'en',
           targetLanguage: 'es',
           wordCount: 0,
           ratePerUnit: languagePair?.ratePerWord || 0.20,
           minimumCharge: languagePair?.minimumCharge || 25,
+          subtotal: quote.subtotal_amount ? parseFloat(quote.subtotal_amount) : 0,
+          tax: quote.tax_amount ? parseFloat(quote.tax_amount) : 0,
+          total: quote.total_amount ? parseFloat(quote.total_amount) : 0,
           languagePairId: languagePair?.id || '',
           createdAt: quote.date_entered ? new Date(quote.date_entered) : new Date(),
         }

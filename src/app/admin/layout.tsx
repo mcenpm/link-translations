@@ -4,10 +4,11 @@ import {
   Users, 
   Languages, 
   FileText, 
-  ShoppingCart, 
+  FolderOpen, 
   DollarSign, 
   Settings,
-  LogOut
+  LogOut,
+  Building2
 } from 'lucide-react'
 
 export default function AdminLayout({
@@ -42,11 +43,18 @@ export default function AdminLayout({
             Dashboard
           </Link>
           <Link 
+            href="/admin/corporates" 
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            <Building2 className="w-5 h-5" />
+            Corporates
+          </Link>
+          <Link 
             href="/admin/customers" 
             className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors"
           >
             <Users className="w-5 h-5" />
-            Customers
+            Contacts
           </Link>
           <Link 
             href="/admin/linguists" 
@@ -63,11 +71,11 @@ export default function AdminLayout({
             Quotes
           </Link>
           <Link 
-            href="/admin/orders" 
+            href="/admin/projects" 
             className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors"
           >
-            <ShoppingCart className="w-5 h-5" />
-            Orders
+            <FolderOpen className="w-5 h-5" />
+            Projects
           </Link>
           <Link 
             href="/admin/pricing" 

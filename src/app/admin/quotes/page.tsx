@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 interface Quote {
   id: string
@@ -120,8 +121,8 @@ export default function AdminQuotesPage() {
               </thead>
               <tbody>
                 {paginatedQuotes.map((quote) => (
-                  <tr key={quote.id} className="border-b hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-mono text-gray-900">{quote.quoteNumber}</td>
+                  <tr key={quote.id} className="border-b hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => window.location.href = `/admin/quotes/${quote.id}`}>
+                    <td className="px-6 py-4 text-sm font-mono text-blue-600 hover:underline">{quote.quoteNumber}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{quote.customer?.company || '-'}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {quote.languagePair ? `${quote.languagePair.sourceLanguage.name} → ${quote.languagePair.targetLanguage.name}` : `${quote.sourceLanguage || '-'} → ${quote.targetLanguage || '-'}`}
@@ -136,8 +137,8 @@ export default function AdminQuotesPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <button className="text-blue-600 hover:text-blue-800 mr-4">View</button>
-                      <button className="text-green-600 hover:text-green-800">Assign</button>
+                      <Link href={`/admin/quotes/${quote.id}`} className="text-blue-600 hover:text-blue-800 mr-4" onClick={(e) => e.stopPropagation()}>View</Link>
+                      <button className="text-green-600 hover:text-green-800" onClick={(e) => e.stopPropagation()}>Assign</button>
                     </td>
                   </tr>
                 ))}

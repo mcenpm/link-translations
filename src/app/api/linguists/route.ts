@@ -1,61 +1,37 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db/prisma'
-
-interface LinguistQueryParams {
-  state?: string
-  language?: string
-  discipline?: string
-  page?: number
-  limit?: number
-}
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
 
     const state = searchParams.get('state') || undefined
-    const language = searchParams.get('language') || undefined
-    const discipline = searchParams.get('discipline') || undefined
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 1000)
 
     const skip = (page - 1) * limit
 
-    const where: any = {
-      isActive: true,
-      isVerified: true,
-    }
+    const where: any = {}
 
     if (state) where.state = state
-    if (discipline) {
-      where.languages = {
-        some: {
-          discipline: discipline,
-        },
-      }
-    }
-    if (language) {
-      where.languages = {
-        some: {
-          language: {
-            code: language,
-          },
-        },
-      }
-    }
 
     const [linguists, total] = await Promise.all([
       prisma.linguist.findMany({
         where,
-        include: {
-          user: {
-            select: { id: true, email: true, firstName: true, lastName: true, phone: true }
-          },
-          languages: {
-            include: {
-              language: true,
-            },
-          },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          nativeLanguage: true,
+          languages: true,
+          specializations: true,
+          ratePerWord: true,
+          minimumCharge: true,
+          isActive: true,
+          isVerified: true,
+          createdAt: true,
         },
         skip,
         take: limit,
@@ -74,6 +50,7 @@ export async function GET(request: Request) {
       },
     })
   } catch (error) {
+    console.error('Error fetching linguists:', error)
     return NextResponse.json({ error: 'Failed to fetch linguists' }, { status: 500 })
   }
 }

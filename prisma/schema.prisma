@@ -49,6 +49,7 @@ model Customer {
   invoices        Invoice[]
   orders          Order[]
   quotes          Quote[]
+  projects        Project[]
 
   @@index([userId])
 }
@@ -59,12 +60,13 @@ model CustomerContact {
   firstName  String
   lastName   String
   title      String?
-  email      String
+  email      String?
   phone      String?
   isPrimary  Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  quotes     Quote[]
 
   @@index([customerId])
 }
@@ -102,6 +104,10 @@ model LanguagePair {
 model Linguist {
   id                   String             @id @default(cuid())
   userId               String             @unique
+  firstName            String
+  lastName             String
+  email                String
+  phone                String?
   dateOfBirth          DateTime?
   gender               String?
   address              String?
@@ -109,13 +115,15 @@ model Linguist {
   state                String?
   zipCode              String?
   country              String?
+  nativeLanguage       String?
+  languages            String[]           @default([])
   bio                  String?
-  experience           Int?
-  specializations      String?
+  experience           String?
+  specializations      String[]           @default([])
   education            String?
   certifications       String?
-  defaultRatePerWord   Float?
-  defaultMinimumCharge Float?
+  ratePerWord          Float?
+  minimumCharge        Float?
   isActive             Boolean            @default(true)
   isVerified           Boolean            @default(false)
   verificationDate     DateTime?
@@ -127,7 +135,7 @@ model Linguist {
   updatedAt            DateTime           @updatedAt
   assignments          Assignment[]
   user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  languages            LinguistLanguage[]
+  linguistLanguages    LinguistLanguage[]
 
   @@index([state])
   @@index([isActive])
@@ -166,11 +174,12 @@ model State {
 }
 
 model Quote {
-  id                    String       @id @default(cuid())
-  quoteNumber           String       @unique
+  id                    String        @id @default(cuid())
+  quoteNumber           String        @unique
   customerId            String
-  languagePairId        String
-  status                QuoteStatus  @default(DRAFT)
+  contactId             String?
+  languagePairId        String?
+  status                QuoteStatus   @default(DRAFT)
   description           String?
   sourceLanguage        String
   targetLanguage        String
@@ -185,16 +194,42 @@ model Quote {
   actualDeliveryDate    DateTime?
   notes                 String?
   internalNotes         String?
-  createdAt             DateTime     @default(now())
-  updatedAt             DateTime     @updatedAt
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
   assignments           Assignment[]
   orders                Order[]
-  customer              Customer     @relation(fields: [customerId], references: [id])
-  languagePair          LanguagePair @relation(fields: [languagePairId], references: [id])
+  project               Project?
+  customer              Customer      @relation(fields: [customerId], references: [id])
+  contact               CustomerContact? @relation(fields: [contactId], references: [id])
+  languagePair          LanguagePair? @relation(fields: [languagePairId], references: [id])
+
+  @@index([customerId])
+  @@index([contactId])
+  @@index([status])
+  @@index([quoteNumber])
+}
+
+model Project {
+  id              String        @id @default(cuid())
+  projectNumber   String        @unique
+  quoteId         String        @unique
+  customerId      String
+  name            String?
+  description     String?
+  status          ProjectStatus @default(IN_PROGRESS)
+  startDate       DateTime      @default(now())
+  dueDate         DateTime?
+  completedDate   DateTime?
+  notes           String?
+  internalNotes   String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  quote           Quote         @relation(fields: [quoteId], references: [id])
+  customer        Customer      @relation(fields: [customerId], references: [id])
 
   @@index([customerId])
   @@index([status])
-  @@index([quoteNumber])
+  @@index([projectNumber])
 }
 
 model Order {
@@ -318,14 +353,22 @@ enum Discipline {
 
 enum QuoteStatus {
   DRAFT
-  SUBMITTED
-  REVIEWED
-  ACCEPTED
-  REJECTED
+  QUOTE_SENT
+  NEGOTIATION_REVIEW
+  FOLLOW_UP
+  INVOICE_PAID
+  INVOICE_NOT_PAID
+  REJECTED_PRICE
+  REJECTED_OTHER
+  REFUND
+  BAD_DEBT
+}
+
+enum ProjectStatus {
   IN_PROGRESS
+  PAUSED
+  REMOVED
   COMPLETED
-  PAID
-  CANCELLED
 }
 
 enum OrderStatus {
