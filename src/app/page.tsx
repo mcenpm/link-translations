@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Metadata } from 'next'
-import { ArrowRight, CheckCircle2, Globe, Sparkles, Zap, Shield, Clock, Users, Star, ChevronRight } from 'lucide-react'
+import { ArrowRight, Clock, Award } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'LINK Translations | Professional Language Services Since 1995',
@@ -10,336 +10,203 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <>
-      {/* Hero Section - Light, Clean, Attractive */}
-      <section className="relative min-h-[95vh] flex items-center overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50 pt-20">
-        {/* Decorative elements */}
-        <div className="absolute top-20 right-0 w-[600px] h-[600px] bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-emerald-400/10 to-blue-400/10 rounded-full blur-3xl" />
-        
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
-        
-        <div className="container relative mx-auto px-6 py-16">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            {/* Left Content */}
-            <div className="max-w-2xl">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 border border-blue-200 mb-8 animate-fade-in-up">
-                <Sparkles className="w-4 h-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-700">Trusted by 10,000+ clients since 1995</span>
-              </div>
-              
-              {/* Main headline */}
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-8 tracking-tight leading-[1.1] animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-                Professional
-                <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">language services</span>
-                <br />
-                you can trust
-              </h1>
-              
-              {/* Subheadline */}
-              <p className="text-xl text-gray-600 mb-10 leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                Certified translations, expert interpreters, and professional typesetting in 
-                <span className="font-semibold text-gray-900"> 150+ languages</span>. 
-                Nearly 30 years of excellence.
-              </p>
-              
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 mb-12 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                <Link 
-                  href="/quote"
-                  className="group inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] transition-all duration-300"
-                >
-                  Get Free Quote
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <a 
-                  href="tel:1-877-272-5465"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold rounded-2xl border-2 border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50 transition-all duration-300"
-                >
-                  📞 1-877-272-LINK
-                </a>
-              </div>
-              
-              {/* Trust badges */}
-              <div className="flex flex-wrap gap-6 text-sm animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-                {[
-                  'USCIS Accepted',
-                  'Court Certified',
-                  'Same-Day Available',
-                ].map((badge) => (
-                  <div key={badge} className="flex items-center gap-2 text-gray-600">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                    <span>{badge}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right Side - Featured Card */}
-            <div className="hidden lg:block relative animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-              <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur-2xl" />
-              <div className="relative bg-white rounded-3xl p-8 shadow-2xl border border-gray-100">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                    <Globe className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">Quick Quote</h3>
-                    <p className="text-gray-500">Response in 2 hours</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-4 mb-6">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                    <span className="text-gray-600">Languages</span>
-                    <span className="font-bold text-blue-600">150+</span>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                    <span className="text-gray-600">Expert Linguists</span>
-                    <span className="font-bold text-blue-600">26,500+</span>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                    <span className="text-gray-600">Projects Completed</span>
-                    <span className="font-bold text-blue-600">35,000+</span>
-                  </div>
-                </div>
-
-                <Link 
-                  href="/quote"
-                  className="block w-full text-center py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold hover:shadow-lg transition-all"
-                >
-                  Request Quote Now
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Logos/Trust Section */}
-      <section className="py-12 bg-gray-50 border-y border-gray-100">
+      {/* Hero Section - Light & Clean */}
+      <section className="pt-32 pb-20 bg-gradient-to-b from-gray-50 to-white">
         <div className="container mx-auto px-6">
-          <p className="text-center text-sm text-gray-500 mb-8">Trusted by leading organizations nationwide</p>
-          <div className="flex flex-wrap justify-center items-center gap-12 opacity-60">
-            {['Law Firms', 'Healthcare', 'Government', 'Corporations', 'Courts'].map((name) => (
-              <div key={name} className="text-xl font-bold text-gray-400">{name}</div>
-            ))}
+          <div className="max-w-4xl mx-auto text-center">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm mb-8 shadow-sm">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+              <span className="text-gray-600">Trusted by 10,000+ clients since 1995</span>
+            </div>
+            
+            {/* Headline */}
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-[1.1] tracking-tight">
+              Translation & Interpretation{' '}
+              <span className="text-blue-600">Done Right</span>
+            </h1>
+            
+            {/* Subheadline */}
+            <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+              Certified translations and professional interpreters in 150+ languages. 
+              Fast turnaround, accurate results, always human-reviewed.
+            </p>
+            
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+              <Link href="/quote" className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-full font-semibold text-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30">
+                Get a Free Quote
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <a href="tel:1-877-272-5465" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-gray-900 rounded-full font-semibold text-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all">
+                📞 1-877-272-LINK
+              </a>
+            </div>
+            
+            {/* Stats Row */}
+            <div className="flex flex-wrap justify-center gap-12 pt-8 border-t border-gray-200">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-gray-900">150+</div>
+                <div className="text-sm text-gray-500 mt-1">Languages</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-gray-900">26,500</div>
+                <div className="text-sm text-gray-500 mt-1">Expert Linguists</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-gray-900">35,000+</div>
+                <div className="text-sm text-gray-500 mt-1">Projects Delivered</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-gray-900">24-48h</div>
+                <div className="text-sm text-gray-500 mt-1">Turnaround</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Services Section - Bento Grid */}
-      <section className="py-24 bg-gray-50">
+      {/* Services Section */}
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
+            <div className="inline-block px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm font-medium mb-4">
+              Our Services
+            </div>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Everything you need
+              Expert language solutions
             </h2>
-            <p className="text-xl text-gray-500 max-w-2xl mx-auto">
-              Complete language solutions for legal, medical, business, and personal needs.
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              From legal contracts to medical records, immigration documents to marketing materials—we translate with precision.
             </p>
           </div>
 
-          {/* Bento Grid */}
-          <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto">
-            {/* Large card */}
-            <div className="md:col-span-2 group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 p-8 md:p-12 text-white hover-lift">
-              <div className="relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-6">
-                  <Globe className="w-7 h-7" />
-                </div>
-                <h3 className="text-2xl md:text-3xl font-bold mb-4">Document Translation</h3>
-                <p className="text-blue-100 text-lg mb-6 max-w-md">
-                  Legal contracts, medical records, business documents, websites, and more. 
-                  Certified and notarized translations ready for any purpose.
-                </p>
-                <Link href="/services" className="inline-flex items-center gap-2 text-white font-semibold hover:gap-3 transition-all">
-                  Learn more <ChevronRight className="w-4 h-4" />
-                </Link>
+          {/* Service Cards */}
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {/* Document Translation */}
+            <Link href="/services/translation" className="group bg-white border border-gray-200 rounded-2xl p-8 hover:border-blue-300 hover:shadow-lg transition-all">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
+                <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
               </div>
-              <div className="absolute right-0 bottom-0 w-64 h-64 bg-white/10 rounded-full blur-3xl transform translate-x-1/3 translate-y-1/3" />
-            </div>
-
-            {/* Small cards */}
-            <div className="group rounded-3xl bg-white p-8 shadow-sm border border-gray-100 hover-lift">
-              <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mb-5">
-                <Shield className="w-6 h-6 text-purple-600" />
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Document Translation</h3>
+              <p className="text-gray-600 mb-4">Legal, medical, technical, and business documents translated by certified native speakers.</p>
+              <div className="flex items-center gap-2 text-blue-600 font-medium group-hover:gap-3 transition-all">
+                Learn more <ArrowRight className="w-4 h-4" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Certified & Notarized</h3>
-              <p className="text-gray-500">Court-ready translations accepted by USCIS, courts, and government agencies.</p>
-            </div>
+            </Link>
 
-            <div className="group rounded-3xl bg-white p-8 shadow-sm border border-gray-100 hover-lift">
-              <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-5">
-                <Users className="w-6 h-6 text-amber-600" />
+            {/* Certified Translations */}
+            <Link href="/services/certified-translations" className="group bg-white border border-gray-200 rounded-2xl p-8 hover:border-blue-300 hover:shadow-lg transition-all">
+              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-6">
+                <Award className="w-6 h-6 text-emerald-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Certified Translations</h3>
+              <p className="text-gray-600 mb-4">USCIS-accepted, court-ready translations with official certification included.</p>
+              <div className="flex items-center gap-2 text-blue-600 font-medium group-hover:gap-3 transition-all">
+                Learn more <ArrowRight className="w-4 h-4" />
+              </div>
+            </Link>
+
+            {/* Interpretation */}
+            <Link href="/services/interpretation" className="group bg-white border border-gray-200 rounded-2xl p-8 hover:border-blue-300 hover:shadow-lg transition-all">
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
+                <Clock className="w-6 h-6 text-purple-600" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">Interpretation</h3>
-              <p className="text-gray-500">On-site and remote interpreters for depositions, trials, medical appointments.</p>
-            </div>
+              <p className="text-gray-600 mb-4">Court, medical, and conference interpreters available on-demand nationwide.</p>
+              <div className="flex items-center gap-2 text-blue-600 font-medium group-hover:gap-3 transition-all">
+                Learn more <ArrowRight className="w-4 h-4" />
+              </div>
+            </Link>
+          </div>
 
-            <div className="group rounded-3xl bg-white p-8 shadow-sm border border-gray-100 hover-lift">
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center mb-5">
-                <Zap className="w-6 h-6 text-emerald-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Fast Turnaround</h3>
-              <p className="text-gray-500">Rush services available. Get quotes in hours, not days.</p>
-            </div>
-
-            {/* Wide card */}
-            <div className="md:col-span-2 group rounded-3xl bg-gradient-to-br from-gray-900 to-gray-800 p-8 md:p-12 text-white hover-lift overflow-hidden relative">
-              <div className="relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center mb-6">
-                  <Clock className="w-7 h-7" />
-                </div>
-                <h3 className="text-2xl md:text-3xl font-bold mb-4">Typesetting & DTP</h3>
-                <p className="text-gray-400 text-lg max-w-md">
-                  Professional desktop publishing in all languages. Preserve your formatting, 
-                  fonts, and layout across any platform.
-                </p>
-              </div>
-              <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-10">
-                <Globe className="w-48 h-48" />
-              </div>
-            </div>
+          {/* View All Services */}
+          <div className="text-center mt-12">
+            <Link href="/services" className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium transition-colors">
+              View all services <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* Why Choose Us - Modern */}
-      <section className="py-24 bg-white">
+      {/* Testimonials */}
+      <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-6">
-          <div className="grid lg:grid-cols-2 gap-16 items-center max-w-6xl mx-auto">
-            <div>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-                Why 10,000+ clients
-                <br />
-                <span className="gradient-text">trust us</span>
-              </h2>
-              <p className="text-xl text-gray-500 mb-10">
-                In an AI-driven world, we combine cutting-edge technology with human expertise. 
-                Every translation is reviewed by certified linguists.
-              </p>
-              
-              <div className="space-y-6">
-                {[
-                  { title: 'Human-First Approach', desc: 'Real experts, not just AI. Every project reviewed by certified linguists.' },
-                  { title: 'Industry Expertise', desc: 'Specialized translators for legal, medical, technical, and more.' },
-                  { title: 'Transparent Pricing', desc: 'Upfront quotes with no hidden fees. Pay only for what you need.' },
-                  { title: 'Personal Support', desc: 'Dedicated project managers. Always a phone call away.' },
-                ].map((item, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                      <CheckCircle2 className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-1">{item.title}</h4>
-                      <p className="text-gray-500">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Testimonial Card */}
-            <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-3xl blur-2xl opacity-20" />
-              <div className="relative bg-white rounded-3xl p-10 shadow-xl border border-gray-100">
-                <div className="flex gap-1 mb-6">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-                <blockquote className="text-xl text-gray-700 mb-8 leading-relaxed">
-                  &ldquo;LINK has been our translation partner for over 15 years. Their attention to detail 
-                  and understanding of legal terminology is unmatched. They&apos;re not just a vendor, 
-                  they&apos;re an extension of our team.&rdquo;
-                </blockquote>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                    JM
-                  </div>
-                  <div>
-                    <div className="font-semibold text-gray-900">James Mitchell</div>
-                    <div className="text-gray-500 text-sm">Partner, Morrison & Associates Law</div>
-                  </div>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Trusted by industry leaders</h2>
+            <p className="text-gray-600">See what our clients have to say</p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            {[
+              {
+                quote: "LINK has been our trusted partner for over 15 years. Their legal terminology expertise is exceptional.",
+                author: "James Mitchell",
+                role: "Partner, Morrison & Associates"
+              },
+              {
+                quote: "Fast, accurate, and professional. Certified translations for immigration delivered perfectly in 24 hours.",
+                author: "Sarah Rodriguez", 
+                role: "Immigration Attorney"
+              },
+              {
+                quote: "The quality of their medical translations is unmatched. Critical for our patient care documentation.",
+                author: "Dr. Michael Chen",
+                role: "Chief Medical Officer"
+              },
+              {
+                quote: "Their court interpreters are highly skilled and professional. Essential for our depositions.",
+                author: "Lisa Thompson",
+                role: "Litigation Partner"
+              },
+            ].map((testimonial, i) => (
+              <div key={i} className="bg-white rounded-xl p-6 border border-gray-100">
+                <p className="text-gray-600 mb-4 text-sm leading-relaxed">&ldquo;{testimonial.quote}&rdquo;</p>
+                <div>
+                  <div className="font-semibold text-gray-900 text-sm">{testimonial.author}</div>
+                  <div className="text-xs text-gray-500">{testimonial.role}</div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Find Translators - Interactive Map Style */}
-      <section className="py-24 bg-gray-50">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Nationwide coverage
-            </h2>
-            <p className="text-xl text-gray-500">
-              Certified linguists in all 50 states, ready when you need them.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 max-w-4xl mx-auto mb-12">
-            {['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
-              'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
-              'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
-              'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
-              'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'].map((state) => (
-              <Link
-                key={state}
-                href={`/translators/${state.toLowerCase()}`}
-                className="aspect-square flex items-center justify-center rounded-xl bg-white text-gray-600 font-semibold text-sm border border-gray-200 hover:bg-blue-600 hover:text-white hover:border-blue-600 hover:scale-110 hover:shadow-lg transition-all duration-200"
-              >
-                {state}
-              </Link>
             ))}
           </div>
-
-          <div className="text-center">
-            <Link 
-              href="/translators"
-              className="inline-flex items-center gap-2 text-blue-600 font-semibold hover:gap-3 transition-all"
-            >
-              View all locations <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
         </div>
       </section>
 
-      {/* CTA Section - Gradient */}
-      <section className="relative py-32 overflow-hidden">
-        <div className="absolute inset-0 gradient-bg" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
-        
-        {/* Animated blobs */}
-        <div className="absolute top-20 left-20 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
-        <div className="absolute bottom-20 right-20 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
-        
-        <div className="container relative mx-auto px-6 text-center">
-          <h2 className="text-4xl md:text-6xl font-bold text-white mb-6">
-            Ready to get started?
-          </h2>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10">
-            Get a free quote in minutes. No commitment, no hidden fees.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              href="/quote"
-              className="group inline-flex items-center justify-center gap-2 px-10 py-5 text-lg font-semibold rounded-full bg-white text-gray-900 hover:bg-gray-100 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-white/20"
-            >
-              Request Free Quote
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <a 
-              href="tel:1-877-272-5465"
-              className="inline-flex items-center justify-center gap-2 px-10 py-5 text-lg font-semibold rounded-full border-2 border-white/20 text-white hover:bg-white/10 transition-all duration-300"
-            >
-              📞 1-877-272-LINK
-            </a>
+      {/* Why Choose - Light Section */}
+      <section className="py-24 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <div className="inline-block px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm font-medium mb-4">
+                Why Choose LINK
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+                Nearly 30 years of trusted language services
+              </h2>
+              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+                We&apos;ve learned that great translation isn&apos;t just about words—it&apos;s about understanding context, culture, and nuance.
+              </p>
+              <Link href="/about" className="inline-flex items-center gap-2 text-blue-600 font-semibold hover:gap-3 transition-all">
+                Learn more about us <ArrowRight className="w-5 h-5" />
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { number: '99.8%', label: 'Accuracy Rate', desc: 'Every translation reviewed by certified native speakers' },
+                { number: '24h', label: 'Turnaround', desc: 'Most documents delivered within 24-48 hours' },
+                { number: '$0', label: 'Hidden Fees', desc: 'Clear, upfront pricing on every project' },
+                { number: '30', label: 'Years', desc: 'Industry experience you can trust' },
+              ].map((stat, i) => (
+                <div key={i} className="bg-gray-50 border border-gray-100 rounded-2xl p-6 hover:border-blue-200 hover:bg-blue-50/50 transition-colors">
+                  <div className="text-3xl font-bold text-gray-900 mb-1">{stat.number}</div>
+                  <div className="text-sm text-blue-600 font-medium mb-2">{stat.label}</div>
+                  <div className="text-sm text-gray-500">{stat.desc}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

@@ -1,8 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
-import { Mail, MapPin, Phone, ArrowUpRight } from 'lucide-react'
+import { Mail, MapPin, Phone, ArrowRight } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 export function Footer() {
@@ -14,139 +13,157 @@ export function Footer() {
   if (hideFooter) return null
 
   return (
-    <footer className="bg-gray-950 text-gray-400">
-      {/* Main Footer */}
-      <div className="container mx-auto px-6 py-16">
-        <div className="grid md:grid-cols-2 lg:grid-cols-12 gap-12">
-          {/* Company Info */}
-          <div className="lg:col-span-4">
-            <div className="mb-6">
-              <Image 
-                src="/logo.png" 
-                alt="LINK Translations" 
-                width={160} 
-                height={45} 
-                className="h-11 w-auto brightness-0 invert opacity-90"
-              />
+    <footer className="bg-gray-900 text-white">
+      {/* Simple CTA Banner */}
+      <div className="bg-blue-600">
+        <div className="container mx-auto px-6 py-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h3 className="text-xl font-bold mb-1">Ready to get started?</h3>
+              <p className="text-blue-100 text-sm">Get a free quote in minutes.</p>
             </div>
-            <p className="text-gray-500 text-sm leading-relaxed mb-6">
-              A tradition of excellence since 1995. Providing certified translations, 
-              interpretation, and professional language services nationwide.
-            </p>
-            <div className="space-y-3 text-sm">
-              <a 
-                href="https://maps.google.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-start gap-3 hover:text-white transition-colors group"
+            <div className="flex gap-3">
+              <Link 
+                href="/quote"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors"
               >
-                <MapPin className="h-5 w-5 text-blue-500 shrink-0" />
-                <span>16560 NW 1st Street, Pembroke Pines, FL 33028</span>
-              </a>
+                Get a Quote
+                <ArrowRight className="w-4 h-4" />
+              </Link>
               <a 
-                href="tel:1-877-272-5465" 
-                className="flex items-center gap-3 hover:text-white transition-colors"
+                href="tel:1-877-272-5465"
+                className="inline-flex items-center gap-2 px-6 py-3 border border-white/30 text-white rounded-full font-semibold hover:bg-white/10 transition-colors"
               >
-                <Phone className="h-5 w-5 text-blue-500 shrink-0" />
-                <span>1-877-272-LINK (5465)</span>
-              </a>
-              <a 
-                href="mailto:info@linktranslations.com" 
-                className="flex items-center gap-3 hover:text-white transition-colors"
-              >
-                <Mail className="h-5 w-5 text-blue-500 shrink-0" />
-                <span>info@linktranslations.com</span>
+                <Phone className="w-4 h-4" />
+                Call Us
               </a>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Services */}
-          <div className="lg:col-span-2">
-            <h4 className="text-white font-semibold mb-5 text-sm uppercase tracking-wider">Services</h4>
-            <ul className="space-y-3 text-sm">
-              {[
-                'Document Translation',
-                'Certified Translations',
-                'Legal Interpretation',
-                'Medical Interpretation',
-                'Transcription',
-                'Typesetting / DTP',
-              ].map((service) => (
-                <li key={service}>
-                  <Link 
-                    href="/services" 
-                    className="hover:text-white transition-colors inline-flex items-center gap-1 group"
-                  >
-                    {service}
-                    <ArrowUpRight className="w-3 h-3 opacity-0 -translate-y-0.5 translate-x-0.5 group-hover:opacity-100 transition-all" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Company */}
-          <div className="lg:col-span-2">
-            <h4 className="text-white font-semibold mb-5 text-sm uppercase tracking-wider">Company</h4>
-            <ul className="space-y-3 text-sm">
-              {[
-                { href: '/about', label: 'About Us' },
-                { href: '/translators', label: 'Find Translators' },
-                { href: '/languages', label: 'Languages' },
-                { href: '/contact', label: 'Contact' },
-                { href: '/quote', label: 'Request Quote' },
-                { href: '/careers', label: 'Careers' },
-              ].map((link) => (
-                <li key={link.href}>
-                  <Link 
-                    href={link.href} 
-                    className="hover:text-white transition-colors inline-flex items-center gap-1 group"
-                  >
-                    {link.label}
-                    <ArrowUpRight className="w-3 h-3 opacity-0 -translate-y-0.5 translate-x-0.5 group-hover:opacity-100 transition-all" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Hours & CTA */}
-          <div className="lg:col-span-4">
-            <h4 className="text-white font-semibold mb-5 text-sm uppercase tracking-wider">Business Hours</h4>
-            <div className="bg-gray-900 rounded-2xl p-5 mb-6">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Monday – Friday</span>
-                  <span className="text-white font-medium">9:00 AM – 6:00 PM</span>
+      {/* Main Footer Content */}
+      <div>
+        <div className="container mx-auto px-6 py-12">
+          <div className="grid lg:grid-cols-12 gap-12">
+            {/* Brand Column */}
+            <div className="lg:col-span-4">
+              <Link href="/" className="inline-flex items-center gap-3 mb-6 group">
+                <div className="w-10 h-10 bg-white text-gray-900 rounded-lg flex items-center justify-center font-bold text-lg">
+                  L
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Weekend</span>
-                  <span className="text-gray-500">Closed</span>
+                <span className="text-xl font-bold">LINK</span>
+              </Link>
+              <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-sm">
+                Certified translations and professional interpretation in 150+ languages since 1995.
+              </p>
+              <div className="space-y-3 text-sm">
+                <a 
+                  href="https://maps.google.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-3 text-gray-400 hover:text-white transition-colors"
+                >
+                  <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>16560 NW 1st Street, Pembroke Pines, FL 33028</span>
+                </a>
+                <a 
+                  href="tel:1-877-272-5465" 
+                  className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors"
+                >
+                  <Phone className="h-4 w-4 shrink-0" />
+                  <span>1-877-272-LINK (5465)</span>
+                </a>
+                <a 
+                  href="mailto:info@linktranslations.com" 
+                  className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors"
+                >
+                  <Mail className="h-4 w-4 shrink-0" />
+                  <span>info@linktranslations.com</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Links Columns */}
+            <div className="lg:col-span-8">
+              <div className="grid sm:grid-cols-3 gap-8">
+                {/* Services */}
+                <div>
+                  <h4 className="text-sm font-semibold text-white mb-4">Services</h4>
+                  <ul className="space-y-2">
+                    {[
+                      { href: '/services/translation', label: 'Document Translation' },
+                      { href: '/services/certified-translations', label: 'Certified Translations' },
+                      { href: '/services/interpretation', label: 'Interpretation' },
+                      { href: '/services/transcription', label: 'Transcription' },
+                      { href: '/services/typesetting', label: 'Typesetting / DTP' },
+                    ].map((link) => (
+                      <li key={link.href}>
+                        <Link 
+                          href={link.href} 
+                          className="text-gray-400 hover:text-white transition-colors text-sm"
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Company */}
+                <div>
+                  <h4 className="text-sm font-semibold text-white mb-4">Company</h4>
+                  <ul className="space-y-2">
+                    {[
+                      { href: '/about', label: 'About Us' },
+                      { href: '/languages', label: 'Languages' },
+                      { href: '/translators', label: 'Find Translators' },
+                      { href: '/contact', label: 'Contact' },
+                      { href: '/careers', label: 'Careers' },
+                    ].map((link) => (
+                      <li key={link.href}>
+                        <Link 
+                          href={link.href} 
+                          className="text-gray-400 hover:text-white transition-colors text-sm"
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Hours */}
+                <div>
+                  <h4 className="text-sm font-semibold text-white mb-4">Business Hours</h4>
+                  <div className="space-y-2 text-sm text-gray-400">
+                    <div className="flex justify-between">
+                      <span>Monday – Friday</span>
+                      <span className="text-white">9AM – 6PM</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Weekend</span>
+                      <span>By appointment</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-6">
+                    Certified Woman-Owned Business Enterprise
+                  </p>
                 </div>
               </div>
             </div>
-            <Link 
-              href="/quote"
-              className="block w-full text-center px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all"
-            >
-              Get Free Quote
-            </Link>
-            <p className="text-xs text-gray-600 text-center mt-4">
-              Certified Woman-Owned Business Enterprise
-            </p>
           </div>
         </div>
       </div>
 
       {/* Bottom Bar */}
       <div className="border-t border-gray-800">
-        <div className="container mx-auto px-6 py-6">
+        <div className="container mx-auto px-6 py-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
             <p>© {new Date().getFullYear()} LINK Translations & Typesetting, Inc.</p>
             <div className="flex items-center gap-6">
               <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
               <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-              <Link href="/accessibility" className="hover:text-white transition-colors">Accessibility</Link>
             </div>
           </div>
         </div>
