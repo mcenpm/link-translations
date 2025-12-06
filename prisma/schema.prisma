@@ -7,6 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// SugarCRM Admin Users - synced from LinkCRM
+model AdminUser {
+  id            String   @id @default(cuid())
+  legacyId      String   @unique // SugarCRM user id
+  email         String   @unique
+  passwordHash  String   // MD5 hash from SugarCRM
+  username      String   @unique
+  firstName     String?
+  lastName      String
+  isActive      Boolean  @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([email])
+  @@index([username])
+}
+
 model User {
   id        String    @id @default(cuid())
   email     String    @unique
@@ -397,4 +415,84 @@ enum AssignmentStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+enum LeadStatus {
+  NEW
+  ASSIGNED
+  IN_PROCESS
+  CONVERTED
+  RECYCLED
+  DEAD
+}
+
+model Lead {
+  id                     String     @id @default(cuid())
+  legacyId               String?    @unique // Original SugarCRM ID
+  firstName              String?
+  lastName               String
+  email                  String?
+  phone                  String?
+  phoneMobile            String?
+  phoneWork              String?
+  phoneFax               String?
+  company                String?
+  title                  String?
+  department             String?
+  website                String?
+  description            String?
+  
+  // Address
+  addressStreet          String?
+  addressCity            String?
+  addressState           String?
+  addressPostalCode      String?
+  addressCountry         String?
+  
+  // Lead Info
+  source                 String?     // Where the lead came from
+  sourceDescription      String?
+  status                 LeadStatus  @default(NEW)
+  statusDescription      String?
+  industry               String?
+  referredBy             String?
+  
+  // Custom Fields from LinkCRM
+  discipline             String?     // Translation, Interpretation, etc.
+  sourceLanguage         String?
+  targetLanguage         String?
+  customerType           String?     // Individual, Corporate
+  leadRanking            String?     // Hot, Warm, Cold
+  
+  // Interpretation Assignment Details
+  assignmentDate         DateTime?
+  assignmentTime         String?
+  estimatedDuration      String?
+  onSiteContact          String?
+  contactPersonPhone     String?
+  assignmentAddress      String?
+  assignmentCity         String?
+  assignmentState        String?
+  assignmentZipCode      String?
+  isCertified            Boolean     @default(false)
+  estimatedFees          String?
+  numberOfParticipants   String?
+  numberOfSpeakers       String?
+  meetingType            String?
+  requestedVendorId      String?
+  
+  // Conversion
+  isConverted            Boolean     @default(false)
+  convertedAt            DateTime?
+  convertedToCustomerId  String?
+  
+  // System
+  doNotCall              Boolean     @default(false)
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([lastName])
+  @@index([company])
 }

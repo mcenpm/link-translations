@@ -20,16 +20,14 @@ export default async function QuotePage() {
   return (
     <div className="min-h-screen bg-white pt-20">
       {/* Hero */}
-      <section className="relative py-16 overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-3xl" />
-        <div className="container mx-auto px-6 relative text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-6">
-            <FileText className="w-4 h-4" />
-            Free Quote
+      <section className="py-16 bg-gradient-to-b from-gray-50 to-white">
+        <div className="container mx-auto px-6 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm mb-6 shadow-sm">
+            <FileText className="w-4 h-4 text-blue-600" />
+            <span className="text-gray-600">Free Quote</span>
           </div>
           <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-            Request a
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"> Free Quote</span>
+            Request a <span className="text-blue-600">Free Quote</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Fill out the form below and we&apos;ll provide a detailed quote within 2 hours 

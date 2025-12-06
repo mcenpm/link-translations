@@ -26,9 +26,11 @@ interface Stats {
   }>
   recentCustomers: Array<{
     id: string
-    company: string
+    firstName: string
+    lastName: string
+    email: string | null
+    company: string | null
     createdAt: string
-    user: { firstName: string | null; lastName: string | null; email: string }
   }>
   languageStats: Array<{
     sourceLanguage: { name: string }
@@ -96,7 +98,7 @@ export default function AdminDashboard() {
             </div>
           </div>
           <h3 className="text-gray-500 text-sm font-medium">Total Customers</h3>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalCustomers || 0}</p>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalCustomers?.toLocaleString() || 0}</p>
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -258,8 +260,8 @@ export default function AdminDashboard() {
                         <Users className="w-4 h-4 text-gray-500" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-900">{customer.company}</p>
-                        <p className="text-xs text-gray-500">{customer.user.email}</p>
+                        <p className="text-sm text-gray-900">{customer.firstName} {customer.lastName}</p>
+                        <p className="text-xs text-gray-500">{customer.email || customer.company || '-'}</p>
                       </div>
                     </div>
                   ))}

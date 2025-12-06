@@ -55,16 +55,15 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white pt-20">
       {/* Hero */}
-      <section className="relative py-20 overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-3xl" />
-        <div className="container mx-auto px-6 relative">
+      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
+        <div className="container mx-auto px-6">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-6">
-              Since 1995
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm mb-6 shadow-sm">
+              <span className="text-gray-600">Since 1995</span>
             </div>
             <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 mb-6">
               A tradition of
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"> excellence</span>
+              <span className="text-blue-600"> excellence</span>
             </h1>
             <p className="text-xl text-gray-600">
               You have reached the original LINK Translations. We have been providing 

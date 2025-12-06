@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { Phone, Mail, MapPin, Clock, Sparkles } from 'lucide-react'
+import { Phone, Mail, MapPin, Clock } from 'lucide-react'
 import ContactForm from '@/components/ContactForm'
 
 export const metadata: Metadata = {
@@ -9,21 +9,17 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen pt-20">
-      {/* Hero - Modern gradient */}
-      <section className="relative py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-50 via-white to-blue-50" />
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-96 h-96 bg-gradient-to-br from-violet-400/20 to-purple-600/20 rounded-full blur-3xl animate-float-slow" />
-        
-        <div className="container mx-auto px-6 relative text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-violet-100 mb-6 shadow-sm">
-            <Sparkles className="w-4 h-4 text-violet-600" />
-            <span className="text-sm font-semibold text-gray-700">We're here to help · Fast response</span>
+    <div className="min-h-screen bg-white pt-20">
+      {/* Hero - Clean design */}
+      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
+        <div className="container mx-auto px-6 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm mb-6 shadow-sm">
+            <Phone className="w-4 h-4 text-blue-600" />
+            <span className="text-gray-600">We&apos;re here to help</span>
           </div>
           
-          <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight animate-slide-in-down">
-            Get in
-            <span className="block gradient-text">Touch</span>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+            Get in <span className="text-blue-600">Touch</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
             Our customer service team is ready to assist you with all your language translation needs. 
@@ -37,19 +33,18 @@ export default function ContactPage() {
         <div className="container mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-6 max-w-5xl mx-auto">
             {[
-              { icon: Phone, label: 'Call Us', value: '1-877-272-LINK', href: 'tel:1-877-272-5465', gradient: 'from-violet-500 to-purple-600' },
-              { icon: Mail, label: 'Email', value: 'info@linktranslations.com', href: 'mailto:info@linktranslations.com', gradient: 'from-blue-500 to-cyan-600' },
-              { icon: MapPin, label: 'Address', value: 'Pembroke Pines, FL', href: '#', gradient: 'from-pink-500 to-rose-600' },
-              { icon: Clock, label: 'Hours', value: 'Mon-Fri 9am-6pm EST', href: '#', gradient: 'from-purple-500 to-indigo-600' },
+              { icon: Phone, label: 'Call Us', value: '1-877-272-LINK', href: 'tel:1-877-272-5465' },
+              { icon: Mail, label: 'Email', value: 'info@linktranslations.com', href: 'mailto:info@linktranslations.com' },
+              { icon: MapPin, label: 'Address', value: 'Pembroke Pines, FL', href: '#' },
+              { icon: Clock, label: 'Hours', value: 'Mon-Fri 9am-6pm EST', href: '#' },
             ].map((item, index) => (
               <a 
                 key={index}
                 href={item.href}
-                className="card hover-lift text-center animate-fade-in-up"
-                style={{ animationDelay: `${index * 0.1}s` }}
+                className="bg-white border border-gray-200 rounded-xl p-6 text-center hover:border-blue-300 hover:shadow-md transition-all"
               >
-                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mx-auto mb-4`}>
-                  <item.icon className="w-7 h-7 text-white" />
+                <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4">
+                  <item.icon className="w-6 h-6 text-blue-600" />
                 </div>
                 <div className="text-sm text-gray-500 mb-1 font-medium">{item.label}</div>
                 <div className="font-semibold text-gray-900">{item.value}</div>
@@ -64,9 +59,9 @@ export default function ContactPage() {
         <div className="container mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-16 max-w-6xl mx-auto">
             {/* Contact Information */}
-            <div className="animate-fade-in-up">
+            <div>
               <h2 className="text-4xl font-bold text-gray-900 mb-6 leading-tight">
-                Why <span className="gradient-text">call us?</span>
+                Why <span className="text-blue-600">call us?</span>
               </h2>
               <p className="text-lg text-gray-600 mb-8 leading-relaxed">
                 Dealing with a company solely online can be frustrating and even dangerous. 
@@ -74,22 +69,22 @@ export default function ContactPage() {
                 deal with a company with a <span className="font-semibold text-gray-900">proven track record of nearly 30 years</span> in the industry.
               </p>
               
-              <div className="space-y-6 mb-12">
-                <div className="flex gap-4 items-start p-5 rounded-xl bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-100">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                    <Phone className="w-6 h-6 text-white" />
+              <div className="space-y-4 mb-12">
+                <div className="flex gap-4 items-start p-5 rounded-xl bg-gray-50 border border-gray-200">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <Phone className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-900 mb-1">Toll Free</h3>
-                    <a href="tel:1-877-272-5465" className="text-xl text-violet-600 font-bold hover:text-violet-700 transition-colors">
+                    <a href="tel:1-877-272-5465" className="text-xl text-blue-600 font-bold hover:text-blue-700 transition-colors">
                       1-877-272-LINK (5465)
                     </a>
                   </div>
                 </div>
 
-                <div className="flex gap-4 items-start p-5 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-100">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center flex-shrink-0">
-                    <Mail className="w-6 h-6 text-white" />
+                <div className="flex gap-4 items-start p-5 rounded-xl bg-gray-50 border border-gray-200">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <Mail className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-900 mb-1">Email</h3>
@@ -99,9 +94,9 @@ export default function ContactPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-4 items-start p-5 rounded-xl bg-gradient-to-br from-pink-50 to-rose-50 border border-pink-100">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-6 h-6 text-white" />
+                <div className="flex gap-4 items-start p-5 rounded-xl bg-gray-50 border border-gray-200">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <MapPin className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-900 mb-1">Mailing Address</h3>
@@ -114,15 +109,12 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-2xl p-8 text-white shadow-xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600" />
-                <div className="relative z-10">
-                  <h3 className="font-bold text-2xl mb-3">Fax Your Documents</h3>
-                  <p className="text-violet-100 mb-4">
-                    Send documents for quotation via fax
-                  </p>
-                  <p className="text-3xl font-bold">954-433-5994</p>
-                </div>
+              <div className="rounded-xl p-6 bg-blue-600 text-white">
+                <h3 className="font-bold text-xl mb-2">Fax Your Documents</h3>
+                <p className="text-blue-100 mb-2">
+                  Send documents for quotation via fax
+                </p>
+                <p className="text-2xl font-bold">954-433-5994</p>
               </div>
             </div>
 

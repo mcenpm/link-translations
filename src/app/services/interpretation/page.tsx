@@ -70,49 +70,39 @@ export default function InterpretationServicesPage() {
 
   return (
     <div className="min-h-screen bg-white pt-20">
-      {/* Hero */}
-      <section className="relative py-20 overflow-hidden bg-gradient-to-br from-amber-50 via-white to-orange-50">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-amber-400/10 to-orange-400/10 rounded-full blur-3xl" />
-        <div className="container mx-auto px-6 relative">
+      {/* Hero - Clean Design */}
+      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
+        <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 border border-amber-200 mb-6">
-              <Mic2 className="w-4 h-4 text-amber-600" />
-              <span className="text-sm font-medium text-amber-700">Available 24/7 Nationwide</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm mb-6 shadow-sm">
+              <Mic2 className="w-4 h-4 text-purple-600" />
+              <span className="text-gray-600">Available 24/7 Nationwide</span>
             </div>
             
-            <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 mb-6">
-              Professional
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600"> Interpretation Services</span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+              Professional{' '}
+              <span className="text-blue-600">Interpretation</span>
             </h1>
             
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-              Certified interpreters for legal proceedings, medical appointments, and business meetings. 
-              On-site, remote, and telephone interpretation in 150+ languages.
+            <p className="text-xl text-gray-600 mb-10 leading-relaxed max-w-2xl mx-auto">
+              Certified interpreters for depositions, trials, medical appointments, and business meetings. 
+              On-site and remote interpretation in 150+ languages.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
                 href="/quote"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 text-white hover:shadow-xl hover:shadow-amber-500/30 transition-all"
+                className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/25"
               >
-                Request Interpreter
-                <ArrowRight className="w-5 h-5" />
+                Schedule Interpreter
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <a 
                 href="tel:1-877-272-5465"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold rounded-2xl border-2 border-gray-200 text-gray-700 hover:border-amber-300 hover:bg-amber-50 transition-all"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white border border-gray-200 text-gray-900 rounded-full font-semibold hover:border-gray-300 transition-all"
               >
                 📞 1-877-272-LINK
               </a>
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-4 text-sm">
-              {['Court Certified', 'Bonded & Insured', 'Same-Day Available'].map((badge) => (
-                <div key={badge} className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-gray-200">
-                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  <span className="text-gray-700">{badge}</span>
-                </div>
-              ))}
             </div>
           </div>
         </div>
@@ -228,7 +218,7 @@ export default function InterpretationServicesPage() {
                   Why choose LINK interpreters?
                 </h2>
                 <p className="text-xl text-gray-600 mb-8">
-                  Our interpreters are not just bilingual—they're trained professionals 
+                  Our interpreters are not just bilingual—they&apos;re trained professionals 
                   with industry expertise and cultural competency.
                 </p>
                 

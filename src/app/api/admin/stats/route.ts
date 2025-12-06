@@ -5,15 +5,15 @@ export async function GET() {
   try {
     // Get counts
     const [
-      totalCustomers,
+      totalContacts,
       totalLinguists,
       pendingQuotes,
       totalQuotes,
       recentQuotes,
-      recentCustomers,
+      recentContacts,
       languageStats
     ] = await Promise.all([
-      prisma.customer.count(),
+      prisma.customerContact.count(),
       prisma.linguist.count(),
       prisma.quote.count({ where: { status: 'QUOTE_SENT' } }),
       prisma.quote.count(),
@@ -34,12 +34,9 @@ export async function GET() {
           }
         }
       }),
-      prisma.customer.findMany({
+      prisma.customerContact.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
-        include: {
-          user: { select: { firstName: true, lastName: true, email: true } }
-        }
       }),
       prisma.languagePair.findMany({
         include: {
@@ -71,14 +68,14 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: {
-        totalCustomers,
+        totalCustomers: totalContacts,
         totalLinguists,
         pendingQuotes,
         totalQuotes,
         totalRevenue,
         quotesThisMonth,
         recentQuotes,
-        recentCustomers,
+        recentCustomers: recentContacts,
         languageStats
       }
     })

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Metadata } from 'next'
-import { Shield, CheckCircle2, ArrowRight, FileCheck, Stamp, Globe, Building, Sparkles } from 'lucide-react'
+import { Shield, CheckCircle2, ArrowRight, FileCheck, Stamp, Building } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Certified & Notarized Translations | USCIS Accepted | LINK Translations',
@@ -93,41 +93,37 @@ export default function CertifiedTranslationsPage() {
   ]
 
   return (
-    <div className="min-h-screen pt-20">
-      {/* Hero - Modern Gradient */}
-      <section className="relative py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50" />
-        <div className="absolute top-20 right-10 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-cyan-600/20 rounded-full blur-3xl animate-float-slow" />
-        <div className="absolute bottom-20 left-10 w-72 h-72 bg-gradient-to-br from-purple-400/20 to-pink-600/20 rounded-full blur-3xl animate-float-slow" style={{ animationDelay: '1.5s' }} />
-        
-        <div className="container mx-auto px-6 relative">
-          <div className="max-w-4xl mx-auto text-center animate-slide-in-down">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-blue-100 mb-6 shadow-sm">
-              <Shield className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-semibold text-gray-700">USCIS & Court Accepted · Legally Valid</span>
+    <div className="min-h-screen bg-white pt-20">
+      {/* Hero - Clean Design */}
+      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm mb-6 shadow-sm">
+              <Shield className="w-4 h-4 text-emerald-600" />
+              <span className="text-gray-600">USCIS & Court Accepted</span>
             </div>
             
-            <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-              Certified &
-              <span className="block gradient-text">Notarized Translations</span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+              Certified &{' '}
+              <span className="text-blue-600">Notarized Translations</span>
             </h1>
             
-            <p className="text-xl text-gray-600 mb-10 leading-relaxed max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 mb-10 leading-relaxed max-w-2xl mx-auto">
               Court-ready translations accepted by USCIS, federal courts, state agencies, and universities. 
-              Certified by <span className="font-semibold text-gray-900">professional translators</span>, notarized for legal validity.
+              Certified and notarized for legal validity.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Link 
                 href="/quote"
-                className="group inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:shadow-xl hover:scale-105 transition-all duration-300"
+                className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/25"
               >
                 Get Certified Quote
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <a 
                 href="tel:1-877-272-5465"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold rounded-xl bg-white border-2 border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-lg transition-all duration-300"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white border border-gray-200 text-gray-900 rounded-full font-semibold hover:border-gray-300 transition-all"
               >
                 📞 1-877-272-LINK
               </a>
@@ -224,7 +220,7 @@ export default function CertifiedTranslationsPage() {
       <section className="py-24 bg-gradient-to-br from-purple-600 to-blue-700 text-white">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-4xl font-bold mb-12 text-center">What's included in certification?</h2>
+            <h2 className="text-4xl font-bold mb-12 text-center">What&apos;s included in certification?</h2>
             
             <div className="grid md:grid-cols-3 gap-8">
               <div className="text-center">
@@ -243,7 +239,7 @@ export default function CertifiedTranslationsPage() {
                 </div>
                 <h3 className="text-xl font-bold mb-3">Notarization</h3>
                 <p className="text-purple-100">
-                  Notary public seal and signature verifying the translator's identity and credentials.
+                  Notary public seal and signature verifying the translator&apos;s identity and credentials.
                 </p>
               </div>
 

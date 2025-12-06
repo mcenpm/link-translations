@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Metadata } from 'next'
-import { FileText, CheckCircle2, ArrowRight, Globe, Building2, Stethoscope, Scale, Megaphone, Cog, Sparkles } from 'lucide-react'
+import { FileText, CheckCircle2, ArrowRight, Globe, Building2, Stethoscope, Scale, Megaphone, Cog } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Professional Document Translation Services | LINK Translations',
@@ -84,41 +84,37 @@ export default function TranslationServicesPage() {
   ]
 
   return (
-    <div className="min-h-screen pt-20">
-      {/* Hero - Modern with gradient */}
-      <section className="relative py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-50 via-white to-blue-50" />
-        <div className="absolute top-20 right-10 w-96 h-96 bg-gradient-to-br from-violet-400/20 to-purple-600/20 rounded-full blur-3xl animate-float-slow" />
-        <div className="absolute bottom-20 left-10 w-72 h-72 bg-gradient-to-br from-blue-400/20 to-cyan-600/20 rounded-full blur-3xl animate-float-slow" style={{ animationDelay: '1s' }} />
-        
-        <div className="container mx-auto px-6 relative">
-          <div className="max-w-4xl mx-auto text-center animate-slide-in-down">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-violet-100 mb-6 shadow-sm">
-              <Sparkles className="w-4 h-4 text-violet-600" />
-              <span className="text-sm font-semibold text-gray-700">150+ Languages · Expert Linguists</span>
+    <div className="min-h-screen bg-white pt-20">
+      {/* Hero - Clean Design */}
+      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm mb-6 shadow-sm">
+              <FileText className="w-4 h-4 text-blue-600" />
+              <span className="text-gray-600">150+ Languages · Expert Linguists</span>
             </div>
             
-            <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-              Professional
-              <span className="block gradient-text">Document Translation</span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+              Professional Document{' '}
+              <span className="text-blue-600">Translation</span>
             </h1>
             
-            <p className="text-xl text-gray-600 mb-10 leading-relaxed max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 mb-10 leading-relaxed max-w-2xl mx-auto">
               Accurate, certified translations for legal, medical, technical, and business documents. 
-              Trusted by <span className="font-semibold text-gray-900">10,000+ clients</span> since 1995.
+              Trusted by 10,000+ clients since 1995.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
                 href="/quote"
-                className="group inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:shadow-xl hover:scale-105 transition-all duration-300"
+                className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/25"
               >
                 Get Free Quote
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <a 
                 href="tel:1-877-272-5465"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold rounded-xl bg-white border-2 border-gray-200 text-gray-700 hover:border-violet-300 hover:shadow-lg transition-all duration-300"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white border border-gray-200 text-gray-900 rounded-full font-semibold hover:border-gray-300 transition-all"
               >
                 📞 1-877-272-LINK
               </a>
@@ -184,7 +180,8 @@ export default function TranslationServicesPage() {
                       className="inline-flex items-center gap-2 text-white font-semibold hover:gap-3 transition-all"
                     >
                       Learn about certified translations <ArrowRight className="w-4 h-4" />
-                  </Link>
+                    </Link>
+                  </div>
                 </div>
               </div>
 

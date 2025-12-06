@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Phone, Menu, X, ArrowRight, User, LogOut } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
@@ -38,18 +39,16 @@ export function Header() {
     }`}>
       <div className="container mx-auto px-6">
         <div className="flex h-20 items-center justify-between">
-          {/* Logo - Text Based */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-lg transition-all group-hover:scale-110 ${
-              isScrolled || !isHomepage ? 'bg-black text-white' : 'bg-white text-black'
-            }`}>
-              L
-            </div>
-            <span className={`text-xl font-bold tracking-tight transition-colors ${
-              isScrolled || !isHomepage ? 'text-gray-900' : 'text-white'
-            }`}>
-              LINK
-            </span>
+          {/* Logo */}
+          <Link href="/" className="flex items-center">
+            <Image 
+              src="/logo.png" 
+              alt="LINK Translations" 
+              width={150} 
+              height={40} 
+              className="h-10 w-auto"
+              priority
+            />
           </Link>
 
           {/* Desktop Navigation - Minimal */}
@@ -160,11 +159,14 @@ export function Header() {
         }`}>
           {/* Mobile Header */}
           <div className="flex items-center justify-between px-6 h-20">
-            <Link href="/" className="flex items-center gap-3" onClick={() => setIsMenuOpen(false)}>
-              <div className="w-10 h-10 bg-white text-black rounded-xl flex items-center justify-center font-black text-lg">
-                L
-              </div>
-              <span className="text-xl font-bold text-white tracking-tight">LINK</span>
+            <Link href="/" onClick={() => setIsMenuOpen(false)}>
+              <Image 
+                src="/logo.png" 
+                alt="LINK Translations" 
+                width={130} 
+                height={35} 
+                className="h-9 w-auto brightness-0 invert"
+              />
             </Link>
             <button 
               className="p-3 rounded-xl text-white hover:bg-white/10"

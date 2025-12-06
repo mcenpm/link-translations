@@ -1,8 +1,14 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
+import { createHash } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
+
+// SugarCRM uses MD5 for password hashing
+function hashPasswordMD5(password: string): string {
+  return createHash('md5').update(password).digest('hex')
+}
 
 // Extend types for NextAuth
 declare module 'next-auth' {
@@ -34,12 +40,64 @@ declare module 'next-auth/jwt' {
     role: UserRole
     customerId?: string
     linguistId?: string
+    isAdmin?: boolean
   }
 }
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    // Admin credentials provider (SugarCRM users)
     CredentialsProvider({
+      id: 'admin-credentials',
+      name: 'Admin Credentials',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' }
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error('Email and password are required')
+        }
+
+        const adminUser = await prisma.adminUser.findUnique({
+          where: { email: credentials.email.toLowerCase() }
+        })
+
+        if (!adminUser) {
+          throw new Error('Invalid email or password')
+        }
+
+        if (!adminUser.isActive) {
+          throw new Error('Account is deactivated')
+        }
+
+        // SugarCRM uses MD5 hashing
+        const passwordHash = hashPasswordMD5(credentials.password)
+
+        if (passwordHash !== adminUser.passwordHash) {
+          throw new Error('Invalid email or password')
+        }
+
+        // Update last login
+        await prisma.adminUser.update({
+          where: { id: adminUser.id },
+          data: { lastLogin: new Date() }
+        })
+
+        const fullName = [adminUser.firstName, adminUser.lastName].filter(Boolean).join(' ')
+
+        return {
+          id: adminUser.id,
+          email: adminUser.email,
+          role: 'ADMIN' as UserRole,
+          firstName: adminUser.firstName,
+          lastName: adminUser.lastName,
+        }
+      }
+    }),
+    // Regular user credentials provider
+    CredentialsProvider({
+      id: 'credentials',
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
@@ -87,6 +145,8 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role
         token.customerId = user.customerId
         token.linguistId = user.linguistId
+        // Set isAdmin flag for admin users
+        token.isAdmin = user.role === 'ADMIN'
       }
       return token
     },

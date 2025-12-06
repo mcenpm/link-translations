@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Mail, MapPin, Phone, ArrowRight } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
@@ -48,11 +49,14 @@ export function Footer() {
           <div className="grid lg:grid-cols-12 gap-12">
             {/* Brand Column */}
             <div className="lg:col-span-4">
-              <Link href="/" className="inline-flex items-center gap-3 mb-6 group">
-                <div className="w-10 h-10 bg-white text-gray-900 rounded-lg flex items-center justify-center font-bold text-lg">
-                  L
-                </div>
-                <span className="text-xl font-bold">LINK</span>
+              <Link href="/" className="inline-block mb-6">
+                <Image 
+                  src="/logo.png" 
+                  alt="LINK Translations" 
+                  width={140} 
+                  height={38} 
+                  className="h-9 w-auto brightness-0 invert"
+                />
               </Link>
               <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-sm">
                 Certified translations and professional interpretation in 150+ languages since 1995.
