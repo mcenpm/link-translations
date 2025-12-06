@@ -193,6 +193,7 @@ model State {
 
 model Quote {
   id                    String        @id @default(cuid())
+  legacyId              String?       @unique
   quoteNumber           String        @unique
   customerId            String
   contactId             String?
@@ -212,6 +213,16 @@ model Quote {
   actualDeliveryDate    DateTime?
   notes                 String?
   internalNotes         String?
+  
+  // Assignment/Interpretation Details
+  discipline            String?
+  assignmentDate        DateTime?
+  assignmentTime        String?
+  estimatedDuration     String?
+  onSiteContact         String?
+  contactPersonPhone    String?
+  contactPersonEmail    String?
+  
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   assignments           Assignment[]
@@ -225,6 +236,7 @@ model Quote {
   @@index([contactId])
   @@index([status])
   @@index([quoteNumber])
+  @@index([legacyId])
 }
 
 model Project {
@@ -470,6 +482,7 @@ model Lead {
   estimatedDuration      String?
   onSiteContact          String?
   contactPersonPhone     String?
+  contactPersonEmail     String?
   assignmentAddress      String?
   assignmentCity         String?
   assignmentState        String?
@@ -495,4 +508,86 @@ model Lead {
   @@index([status])
   @@index([lastName])
   @@index([company])
+}
+
+// Legacy Quotes from LinkCRM - all disciplines (Translation, Interpretation, etc.)
+model LegacyQuote {
+  id                    String    @id @default(cuid())
+  legacyId              String    @unique // SugarCRM quote id
+  number                String?   // Quote number (e.g., "10168")
+  name                  String?   // Quote name/title
+  description           String?
+  
+  // Billing Info
+  billingAccount        String?
+  billingAccountId      String?   // SugarCRM account id
+  billingContact        String?
+  billingContactId      String?   // SugarCRM contact id
+  billingAddress        String?
+  billingCity           String?
+  billingState          String?
+  billingPostal         String?
+  billingCountry        String?
+  
+  // Shipping Info
+  shippingAccount       String?
+  shippingAccountId     String?
+  shippingContact       String?
+  shippingContactId     String?
+  shippingAddress       String?
+  shippingCity          String?
+  shippingState         String?
+  shippingPostal        String?
+  shippingCountry       String?
+  
+  // Status & Dates
+  stage                 String?   // Draft, Negotiation, Delivered, etc.
+  expiration            DateTime?
+  estimatedCompletion   DateTime?
+  
+  // Amounts
+  subtotalAmount        Decimal?  @db.Decimal(16, 2)
+  taxAmount             Decimal?  @db.Decimal(8, 2)
+  shippingAmount        Decimal?  @db.Decimal(8, 2)
+  totalAmount           Decimal?  @db.Decimal(16, 2)
+  paymentsReceived      Decimal?  @db.Decimal(8, 2)
+  balanceDue            Decimal?  @db.Decimal(8, 2)
+  
+  // Payment Info
+  paymentDate           DateTime?
+  paymentType           String?
+  checkNumber           String?
+  
+  // Service Details (for all disciplines)
+  discipline            String?   // Translation, Interpretation, etc.
+  sourceLanguage        String?
+  targetLanguage        String?
+  
+  // Assignment Details (primarily for Interpretation)
+  assignmentDate        DateTime?
+  assignmentTime        String?
+  estimatedDuration     String?
+  onSiteContact         String?
+  contactPersonPhone    String?
+  contactPersonEmail    String?
+  
+  // Other
+  terms                 String?
+  ponumber              String?
+  opportunityId         String?
+  gsa                   Boolean   @default(false)
+  partnerId             String?
+  
+  // Relations
+  assignedUserId        String?
+  
+  // System
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([number])
+  @@index([billingAccountId])
+  @@index([billingContactId])
+  @@index([stage])
+  @@index([discipline])
 }

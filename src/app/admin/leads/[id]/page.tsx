@@ -62,6 +62,7 @@ interface Lead {
   estimatedDuration: string | null
   onSiteContact: string | null
   contactPersonPhone: string | null
+  contactPersonEmail: string | null
   assignmentAddress: string | null
   assignmentCity: string | null
   assignmentState: string | null
@@ -134,17 +135,6 @@ export default function LeadDetailPage() {
       lead.addressState,
       lead.addressPostalCode,
       lead.addressCountry
-    ].filter(Boolean)
-    return parts.length > 0 ? parts.join(', ') : null
-  }
-
-  const getAssignmentAddress = () => {
-    if (!lead) return null
-    const parts = [
-      lead.assignmentAddress,
-      lead.assignmentCity,
-      lead.assignmentState,
-      lead.assignmentZipCode
     ].filter(Boolean)
     return parts.length > 0 ? parts.join(', ') : null
   }
@@ -372,13 +362,31 @@ export default function LeadDetailPage() {
                     <div className="text-gray-900">{lead.numberOfSpeakers}</div>
                   </div>
                 )}
-                {getAssignmentAddress() && (
-                  <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-100 md:col-span-2">
+                {lead.assignmentAddress && (
+                  <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
                     <MapPin className="w-5 h-5 text-red-600 mt-0.5" />
                     <div>
-                      <div className="text-sm text-red-600 font-medium">Assignment Location</div>
-                      <div className="text-gray-900">{getAssignmentAddress()}</div>
+                      <div className="text-sm text-red-600 font-medium">Street Address</div>
+                      <div className="text-gray-900">{lead.assignmentAddress}</div>
                     </div>
+                  </div>
+                )}
+                {lead.assignmentCity && (
+                  <div className="p-3 bg-red-50 rounded-lg border border-red-100">
+                    <div className="text-sm text-red-600 font-medium">City</div>
+                    <div className="text-gray-900">{lead.assignmentCity}</div>
+                  </div>
+                )}
+                {lead.assignmentState && (
+                  <div className="p-3 bg-red-50 rounded-lg border border-red-100">
+                    <div className="text-sm text-red-600 font-medium">State</div>
+                    <div className="text-gray-900">{lead.assignmentState}</div>
+                  </div>
+                )}
+                {lead.assignmentZipCode && (
+                  <div className="p-3 bg-red-50 rounded-lg border border-red-100">
+                    <div className="text-sm text-red-600 font-medium">Zip Code</div>
+                    <div className="text-gray-900">{lead.assignmentZipCode}</div>
                   </div>
                 )}
                 {lead.onSiteContact && (
@@ -393,6 +401,15 @@ export default function LeadDetailPage() {
                     <div>
                       <div className="text-sm text-gray-500">Contact Phone</div>
                       <div className="text-gray-900">{lead.contactPersonPhone}</div>
+                    </div>
+                  </a>
+                )}
+                {lead.contactPersonEmail && (
+                  <a href={`mailto:${lead.contactPersonEmail}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <Mail className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <div className="text-sm text-gray-500">Contact Email</div>
+                      <div className="text-gray-900">{lead.contactPersonEmail}</div>
                     </div>
                   </a>
                 )}
