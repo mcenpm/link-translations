@@ -1,12 +1,68 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { 
   CheckCircle2, Loader2, ArrowRight, ArrowLeft, FileText, Mic, 
-  Globe, User, Calendar, MessageSquare, Check, MapPin, Video, Phone, Users
+  Globe, User, Calendar, MessageSquare, Check, MapPin, Video, Phone, Users,
+  CalendarRange, CalendarDays, Plus, X, Clock, ChevronDown
 } from 'lucide-react'
+
+// US States list
+const US_STATES = [
+  { code: 'AL', name: 'Alabama' },
+  { code: 'AK', name: 'Alaska' },
+  { code: 'AZ', name: 'Arizona' },
+  { code: 'AR', name: 'Arkansas' },
+  { code: 'CA', name: 'California' },
+  { code: 'CO', name: 'Colorado' },
+  { code: 'CT', name: 'Connecticut' },
+  { code: 'DE', name: 'Delaware' },
+  { code: 'FL', name: 'Florida' },
+  { code: 'GA', name: 'Georgia' },
+  { code: 'HI', name: 'Hawaii' },
+  { code: 'ID', name: 'Idaho' },
+  { code: 'IL', name: 'Illinois' },
+  { code: 'IN', name: 'Indiana' },
+  { code: 'IA', name: 'Iowa' },
+  { code: 'KS', name: 'Kansas' },
+  { code: 'KY', name: 'Kentucky' },
+  { code: 'LA', name: 'Louisiana' },
+  { code: 'ME', name: 'Maine' },
+  { code: 'MD', name: 'Maryland' },
+  { code: 'MA', name: 'Massachusetts' },
+  { code: 'MI', name: 'Michigan' },
+  { code: 'MN', name: 'Minnesota' },
+  { code: 'MS', name: 'Mississippi' },
+  { code: 'MO', name: 'Missouri' },
+  { code: 'MT', name: 'Montana' },
+  { code: 'NE', name: 'Nebraska' },
+  { code: 'NV', name: 'Nevada' },
+  { code: 'NH', name: 'New Hampshire' },
+  { code: 'NJ', name: 'New Jersey' },
+  { code: 'NM', name: 'New Mexico' },
+  { code: 'NY', name: 'New York' },
+  { code: 'NC', name: 'North Carolina' },
+  { code: 'ND', name: 'North Dakota' },
+  { code: 'OH', name: 'Ohio' },
+  { code: 'OK', name: 'Oklahoma' },
+  { code: 'OR', name: 'Oregon' },
+  { code: 'PA', name: 'Pennsylvania' },
+  { code: 'RI', name: 'Rhode Island' },
+  { code: 'SC', name: 'South Carolina' },
+  { code: 'SD', name: 'South Dakota' },
+  { code: 'TN', name: 'Tennessee' },
+  { code: 'TX', name: 'Texas' },
+  { code: 'UT', name: 'Utah' },
+  { code: 'VT', name: 'Vermont' },
+  { code: 'VA', name: 'Virginia' },
+  { code: 'WA', name: 'Washington' },
+  { code: 'WV', name: 'West Virginia' },
+  { code: 'WI', name: 'Wisconsin' },
+  { code: 'WY', name: 'Wyoming' },
+  { code: 'DC', name: 'Washington D.C.' },
+]
 
 interface Language {
   id: string
@@ -14,16 +70,456 @@ interface Language {
   code: string | null
 }
 
+interface DateTimeEntry {
+  id: string
+  date: string
+  startTime: string
+  endTime: string
+}
+
+// Generate hours array (1-12)
+const HOURS_12 = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'))
+// Generate minutes array (00-59)
+const MINUTES_60 = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'))
+
+// Helper to convert 24h to 12h format
+const to12Hour = (time24: string): { hour: string; minute: string; period: 'AM' | 'PM' } => {
+  if (!time24) return { hour: '', minute: '', period: 'AM' }
+  const [h, m] = time24.split(':')
+  const hour24 = parseInt(h)
+  const period = hour24 >= 12 ? 'PM' : 'AM'
+  const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24
+  return { hour: hour12.toString().padStart(2, '0'), minute: m, period }
+}
+
+// Helper to convert 12h to 24h format
+const to24Hour = (hour: string, minute: string, period: 'AM' | 'PM'): string => {
+  if (!hour || !minute) return ''
+  let h = parseInt(hour)
+  if (period === 'AM' && h === 12) h = 0
+  else if (period === 'PM' && h !== 12) h += 12
+  return `${h.toString().padStart(2, '0')}:${minute}`
+}
+
+// MUI-style TimePicker Component
+interface TimePickerProps {
+  value: string
+  onChange: (value: string) => void
+}
+
+function TimePicker({ value, onChange }: TimePickerProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [hourInput, setHourInput] = useState('')
+  const [minuteInput, setMinuteInput] = useState('')
+  const [periodInput, setPeriodInput] = useState<'AM' | 'PM'>('AM')
+  const [focusedSection, setFocusedSection] = useState<'hour' | 'minute' | 'period' | null>(null)
+  const [inputBuffer, setInputBuffer] = useState('')
+  
+  const containerRef = useRef<HTMLDivElement>(null)
+  const hourRef = useRef<HTMLInputElement>(null)
+  const minuteRef = useRef<HTMLInputElement>(null)
+  const periodRef = useRef<HTMLInputElement>(null)
+  const hourScrollRef = useRef<HTMLDivElement>(null)
+  const minuteScrollRef = useRef<HTMLDivElement>(null)
+  
+  // Sync internal state with value prop
+  useEffect(() => {
+    const { hour, minute, period } = to12Hour(value)
+    setHourInput(hour)
+    setMinuteInput(minute)
+    setPeriodInput(period)
+  }, [value])
+  
+  // Close on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false)
+        setFocusedSection(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+  
+  // Scroll to selected value when opening
+  useEffect(() => {
+    if (isOpen) {
+      requestAnimationFrame(() => {
+        const scrollToSelected = (ref: React.RefObject<HTMLDivElement | null>, val: string) => {
+          if (ref.current && val) {
+            const selected = ref.current.querySelector(`[data-value="${val}"]`) as HTMLElement
+            if (selected) {
+              ref.current.scrollTop = selected.offsetTop - ref.current.offsetHeight / 2 + selected.offsetHeight / 2
+            }
+          }
+        }
+        scrollToSelected(hourScrollRef, hourInput)
+        scrollToSelected(minuteScrollRef, minuteInput)
+      })
+    }
+  }, [isOpen, hourInput, minuteInput])
+  
+  // Update parent value
+  const updateValue = (h: string, m: string, p: 'AM' | 'PM') => {
+    if (h && m && !h.includes('_') && !m.includes('_')) {
+      onChange(to24Hour(h, m, p))
+    }
+  }
+  
+  // Move focus to next section
+  const goToMinute = () => {
+    setInputBuffer('')
+    setFocusedSection('minute')
+    requestAnimationFrame(() => minuteRef.current?.focus())
+  }
+  
+  const goToPeriod = () => {
+    setInputBuffer('')
+    setFocusedSection('period')
+    requestAnimationFrame(() => periodRef.current?.focus())
+  }
+  
+  const goToHour = () => {
+    setInputBuffer('')
+    setFocusedSection('hour')
+    requestAnimationFrame(() => hourRef.current?.focus())
+  }
+
+  // Handle hour input
+  const handleHourKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowRight' || e.key === 'Tab') {
+      e.preventDefault()
+      goToMinute()
+      return
+    }
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault()
+      let h = parseInt(hourInput || '12') + (e.key === 'ArrowUp' ? 1 : -1)
+      if (h > 12) h = 1
+      if (h < 1) h = 12
+      const newHour = h.toString().padStart(2, '0')
+      setHourInput(newHour)
+      updateValue(newHour, minuteInput || '00', periodInput)
+      return
+    }
+    if (/^[0-9]$/.test(e.key)) {
+      e.preventDefault()
+      const newBuffer = inputBuffer + e.key
+      const num = parseInt(newBuffer)
+      
+      if (newBuffer.length === 1) {
+        if (num >= 2) {
+          // 2-9: set hour and go to minute
+          const newHour = num.toString().padStart(2, '0')
+          setHourInput(newHour)
+          updateValue(newHour, minuteInput || '00', periodInput)
+          goToMinute()
+        } else {
+          // 0 or 1: wait for second digit
+          setInputBuffer(newBuffer)
+          setHourInput(num + '_')
+        }
+      } else {
+        // Second digit
+        let h = num
+        if (h > 12) h = parseInt(e.key)
+        if (h === 0) h = 12
+        const newHour = h.toString().padStart(2, '0')
+        setHourInput(newHour)
+        updateValue(newHour, minuteInput || '00', periodInput)
+        goToMinute()
+      }
+    }
+  }
+
+  // Handle minute input  
+  const handleMinuteKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowRight' || e.key === 'Tab') {
+      e.preventDefault()
+      goToPeriod()
+      return
+    }
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      goToHour()
+      return
+    }
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault()
+      let m = parseInt(minuteInput || '0') + (e.key === 'ArrowUp' ? 1 : -1)
+      if (m > 59) m = 0
+      if (m < 0) m = 59
+      const newMin = m.toString().padStart(2, '0')
+      setMinuteInput(newMin)
+      updateValue(hourInput || '12', newMin, periodInput)
+      return
+    }
+    if (/^[0-9]$/.test(e.key)) {
+      e.preventDefault()
+      const newBuffer = inputBuffer + e.key
+      const num = parseInt(newBuffer)
+      
+      if (newBuffer.length === 1) {
+        if (num >= 6) {
+          // 6-9: set minute and go to period
+          const newMin = num.toString().padStart(2, '0')
+          setMinuteInput(newMin)
+          updateValue(hourInput || '12', newMin, periodInput)
+          goToPeriod()
+        } else {
+          // 0-5: wait for second digit
+          setInputBuffer(newBuffer)
+          setMinuteInput(num + '_')
+        }
+      } else {
+        // Second digit
+        let m = num
+        if (m > 59) m = parseInt(e.key)
+        const newMin = m.toString().padStart(2, '0')
+        setMinuteInput(newMin)
+        updateValue(hourInput || '12', newMin, periodInput)
+        goToPeriod()
+      }
+    }
+  }
+
+  // Handle period input
+  const handlePeriodKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      goToMinute()
+      return
+    }
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault()
+      const newPeriod = periodInput === 'AM' ? 'PM' : 'AM'
+      setPeriodInput(newPeriod)
+      updateValue(hourInput || '12', minuteInput || '00', newPeriod)
+      return
+    }
+    if (e.key === 'a' || e.key === 'A') {
+      e.preventDefault()
+      setPeriodInput('AM')
+      updateValue(hourInput || '12', minuteInput || '00', 'AM')
+    }
+    if (e.key === 'p' || e.key === 'P') {
+      e.preventDefault()
+      setPeriodInput('PM')
+      updateValue(hourInput || '12', minuteInput || '00', 'PM')
+    }
+  }
+  
+  const handleSelectFromPicker = (type: 'hour' | 'minute' | 'period', val: string) => {
+    if (type === 'hour') {
+      setHourInput(val)
+      updateValue(val, minuteInput || '00', periodInput)
+    } else if (type === 'minute') {
+      setMinuteInput(val)
+      updateValue(hourInput || '12', val, periodInput)
+    } else {
+      const p = val as 'AM' | 'PM'
+      setPeriodInput(p)
+      updateValue(hourInput || '12', minuteInput || '00', p)
+    }
+  }
+  
+  const getSectionStyle = (section: 'hour' | 'minute' | 'period') => {
+    const isFocused = focusedSection === section
+    return `w-8 text-center bg-transparent outline-none cursor-pointer transition-all rounded px-1 py-0.5 ${
+      isFocused 
+        ? 'bg-purple-600 text-white caret-transparent' 
+        : 'text-gray-700 hover:bg-purple-100'
+    }`
+  }
+  
+  const getDisplayValue = (section: 'hour' | 'minute' | 'period') => {
+    if (section === 'hour') return hourInput.replace('_', ' ') || 'hh'
+    if (section === 'minute') return minuteInput.replace('_', ' ') || 'mm'
+    return hourInput ? periodInput : 'aa'
+  }
+  
+  return (
+    <div className="relative" ref={containerRef}>
+      {/* Input Field */}
+      <div className={`flex items-center border rounded-lg bg-white transition-all ${
+        focusedSection ? 'border-purple-500 ring-2 ring-purple-200 shadow-sm' : 'border-gray-200 hover:border-purple-300'
+      }`}>
+        <div className="flex items-center px-2 py-1.5 flex-1 text-sm font-mono">
+          {/* Hour */}
+          <input
+            ref={hourRef}
+            type="text"
+            readOnly
+            value={getDisplayValue('hour')}
+            className={getSectionStyle('hour')}
+            onFocus={() => { setInputBuffer(''); setFocusedSection('hour') }}
+            onBlur={() => {
+              if (hourInput.includes('_')) {
+                const h = parseInt(hourInput) || 12
+                setHourInput(h.toString().padStart(2, '0'))
+                updateValue(h.toString().padStart(2, '0'), minuteInput || '00', periodInput)
+              }
+              setInputBuffer('')
+            }}
+            onKeyDown={handleHourKeyDown}
+          />
+          <span className="text-gray-400 font-bold mx-0.5">:</span>
+          {/* Minute */}
+          <input
+            ref={minuteRef}
+            type="text"
+            readOnly
+            value={getDisplayValue('minute')}
+            className={getSectionStyle('minute')}
+            onFocus={() => { setInputBuffer(''); setFocusedSection('minute') }}
+            onBlur={() => {
+              if (minuteInput.includes('_')) {
+                const m = parseInt(minuteInput) || 0
+                setMinuteInput(m.toString().padStart(2, '0'))
+                updateValue(hourInput || '12', m.toString().padStart(2, '0'), periodInput)
+              }
+              setInputBuffer('')
+            }}
+            onKeyDown={handleMinuteKeyDown}
+          />
+          <span className="w-1" />
+          {/* Period */}
+          <input
+            ref={periodRef}
+            type="text"
+            readOnly
+            value={getDisplayValue('period')}
+            className={getSectionStyle('period')}
+            onFocus={() => { setInputBuffer(''); setFocusedSection('period') }}
+            onKeyDown={handlePeriodKeyDown}
+          />
+        </div>
+        
+        {/* Clock Icon Button */}
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="p-2 hover:bg-purple-50 rounded-r-lg transition-colors border-l border-gray-200"
+        >
+          <Clock className="w-4 h-4 text-purple-500" />
+        </button>
+      </div>
+      
+      {/* Dropdown Picker */}
+      {isOpen && (
+        <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden" style={{ width: '220px' }}>
+          <div className="flex h-52">
+            {/* Hours Column */}
+            <div 
+              ref={hourScrollRef}
+              className="flex-1 overflow-y-auto border-r border-gray-100"
+              style={{ scrollbarWidth: 'thin' }}
+            >
+              {HOURS_12.map(h => (
+                <div
+                  key={h}
+                  data-value={h}
+                  onClick={() => handleSelectFromPicker('hour', h)}
+                  className={`px-3 py-2 text-center cursor-pointer transition-colors text-sm ${
+                    hourInput === h 
+                      ? 'bg-purple-600 text-white font-medium' 
+                      : 'hover:bg-purple-50 text-gray-700'
+                  }`}
+                >
+                  {h}
+                </div>
+              ))}
+            </div>
+            
+            {/* Minutes Column */}
+            <div 
+              ref={minuteScrollRef}
+              className="flex-1 overflow-y-auto border-r border-gray-100"
+              style={{ scrollbarWidth: 'thin' }}
+            >
+              {MINUTES_60.map(m => (
+                <div
+                  key={m}
+                  data-value={m}
+                  onClick={() => handleSelectFromPicker('minute', m)}
+                  className={`px-3 py-2 text-center cursor-pointer transition-colors text-sm ${
+                    minuteInput === m 
+                      ? 'bg-purple-600 text-white font-medium' 
+                      : 'hover:bg-purple-50 text-gray-700'
+                  }`}
+                >
+                  {m}
+                </div>
+              ))}
+            </div>
+            
+            {/* AM/PM Column */}
+            <div className="w-14 flex flex-col">
+              <div
+                onClick={() => handleSelectFromPicker('period', 'AM')}
+                className={`flex-1 flex items-center justify-center cursor-pointer transition-colors text-sm font-medium ${
+                  periodInput === 'AM' 
+                    ? 'bg-purple-600 text-white' 
+                    : 'hover:bg-purple-50 text-gray-700'
+                }`}
+              >
+                AM
+              </div>
+              <div
+                onClick={() => handleSelectFromPicker('period', 'PM')}
+                className={`flex-1 flex items-center justify-center cursor-pointer transition-colors text-sm font-medium ${
+                  periodInput === 'PM' 
+                    ? 'bg-purple-600 text-white' 
+                    : 'hover:bg-purple-50 text-gray-700'
+                }`}
+              >
+                PM
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface QuoteWizardProps {
   languages: Language[]
 }
 
 type Step = 1 | 2 | 3 | 4
+type DateSelectionMode = 'single' | 'range' | 'multiple'
+type TimeMode = 'same' | 'different'
 
 // Parse step name to number
 const getStepFromName = (name: string): Step => {
   const stepMap: Record<string, Step> = { service: 1, details: 2, contact: 3, review: 4 }
   return stepMap[name] || 1
+}
+
+// Generate date entries for a date range
+const generateDateEntriesForRange = (startDate: string, endDate: string): DateTimeEntry[] => {
+  const entries: DateTimeEntry[] = []
+  const start = new Date(startDate)
+  const end = new Date(endDate)
+  
+  if (start > end) return entries
+  
+  const current = new Date(start)
+  let id = 1
+  while (current <= end) {
+    entries.push({
+      id: id.toString(),
+      date: current.toISOString().split('T')[0],
+      startTime: '',
+      endTime: ''
+    })
+    current.setDate(current.getDate() + 1)
+    id++
+  }
+  
+  return entries
 }
 
 export default function QuoteWizard({ languages }: QuoteWizardProps) {
@@ -38,6 +534,11 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [quoteNumber, setQuoteNumber] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  
+  // State dropdown states
+  const [stateDropdownOpen, setStateDropdownOpen] = useState(false)
+  const [stateSearchTerm, setStateSearchTerm] = useState('')
+  const stateDropdownRef = useRef<HTMLDivElement>(null)
 
   const [formData, setFormData] = useState({
     // Step 1: Service Type
@@ -53,10 +554,17 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
     interpretationSetting: '', // In-Person, Video-Remote, Over the Phone
     interpretationMode: '', // Consecutive, Simultaneous
     subjectMatter: '',
-    interpretationDate: '',
-    interpretationTime: '',
-    interpretationDuration: '',
+    // New date/time structure
+    dateSelectionMode: '' as DateSelectionMode | '',
+    timeMode: 'same' as TimeMode,
+    dateRangeStart: '',
+    dateRangeEnd: '',
+    sharedStartTime: '',
+    sharedEndTime: '',
+    dateTimeEntries: [] as DateTimeEntry[],
     interpretationLocation: '',
+    interpretationCity: '',
+    interpretationState: '',
     
     // Step 3: Contact Info
     firstName: '',
@@ -69,6 +577,23 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
     description: '',
     howDidYouHear: '',
   })
+
+  // Close state dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (stateDropdownRef.current && !stateDropdownRef.current.contains(event.target as Node)) {
+        setStateDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Filter states based on search term
+  const filteredStates = US_STATES.filter(state => 
+    state.name.toLowerCase().includes(stateSearchTerm.toLowerCase()) ||
+    state.code.toLowerCase().includes(stateSearchTerm.toLowerCase())
+  )
 
   // Step names for URL
   const stepNames = ['service', 'details', 'contact', 'review'] as const
@@ -205,8 +730,10 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                       serviceType: '', sourceLanguageId: '', targetLanguageId: '',
                       documentType: '', wordCount: '', deadline: '',
                       interpretationType: '', interpretationSetting: '', interpretationMode: '',
-                      subjectMatter: '', interpretationDate: '', interpretationTime: '',
-                      interpretationDuration: '', interpretationLocation: '',
+                      subjectMatter: '', dateSelectionMode: '', timeMode: 'same',
+                      dateRangeStart: '', dateRangeEnd: '', sharedStartTime: '', sharedEndTime: '',
+                      dateTimeEntries: [], interpretationLocation: '',
+                      interpretationCity: '', interpretationState: '',
                       firstName: '', lastName: '', email: '', phone: '', company: '',
                       description: '', howDidYouHear: '',
                     })
@@ -276,7 +803,7 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
           </div>
 
           {/* Form Card */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
             {/* Error Message */}
             {submitStatus === 'error' && (
               <div className="bg-red-50 border-b border-red-100 px-4 py-3 text-red-600 text-sm">
@@ -477,51 +1004,51 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                             onClick={() => setFormData(prev => ({ ...prev, interpretationSetting: 'in-person' }))}
                             className={`relative flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
                               formData.interpretationSetting === 'in-person'
-                                ? 'border-blue-600 bg-blue-600 shadow-lg shadow-blue-600/30'
-                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                ? 'border-purple-500 bg-purple-50'
+                                : 'border-gray-200 bg-white hover:border-purple-300 hover:bg-gray-50'
                             }`}
                           >
                             {formData.interpretationSetting === 'in-person' && (
-                              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white">
+                              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center border-2 border-white">
                                 <Check className="w-3 h-3 text-white" />
                               </div>
                             )}
-                            <MapPin className={`w-5 h-5 ${formData.interpretationSetting === 'in-person' ? 'text-white' : 'text-gray-500'}`} />
-                            <span className={`text-xs font-semibold ${formData.interpretationSetting === 'in-person' ? 'text-white' : 'text-gray-600'}`}>In-Person</span>
+                            <MapPin className={`w-5 h-5 ${formData.interpretationSetting === 'in-person' ? 'text-purple-600' : 'text-gray-500'}`} />
+                            <span className={`text-xs font-semibold ${formData.interpretationSetting === 'in-person' ? 'text-purple-700' : 'text-gray-600'}`}>In-Person</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => setFormData(prev => ({ ...prev, interpretationSetting: 'video-remote' }))}
                             className={`relative flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
                               formData.interpretationSetting === 'video-remote'
-                                ? 'border-blue-600 bg-blue-600 shadow-lg shadow-blue-600/30'
-                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                ? 'border-purple-500 bg-purple-50'
+                                : 'border-gray-200 bg-white hover:border-purple-300 hover:bg-gray-50'
                             }`}
                           >
                             {formData.interpretationSetting === 'video-remote' && (
-                              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white">
+                              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center border-2 border-white">
                                 <Check className="w-3 h-3 text-white" />
                               </div>
                             )}
-                            <Video className={`w-5 h-5 ${formData.interpretationSetting === 'video-remote' ? 'text-white' : 'text-gray-500'}`} />
-                            <span className={`text-xs font-semibold ${formData.interpretationSetting === 'video-remote' ? 'text-white' : 'text-gray-600'}`}>Video</span>
+                            <Video className={`w-5 h-5 ${formData.interpretationSetting === 'video-remote' ? 'text-purple-600' : 'text-gray-500'}`} />
+                            <span className={`text-xs font-semibold ${formData.interpretationSetting === 'video-remote' ? 'text-purple-700' : 'text-gray-600'}`}>Video</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => setFormData(prev => ({ ...prev, interpretationSetting: 'phone' }))}
                             className={`relative flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
                               formData.interpretationSetting === 'phone'
-                                ? 'border-blue-600 bg-blue-600 shadow-lg shadow-blue-600/30'
-                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                ? 'border-purple-500 bg-purple-50'
+                                : 'border-gray-200 bg-white hover:border-purple-300 hover:bg-gray-50'
                             }`}
                           >
                             {formData.interpretationSetting === 'phone' && (
-                              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white">
+                              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center border-2 border-white">
                                 <Check className="w-3 h-3 text-white" />
                               </div>
                             )}
-                            <Phone className={`w-5 h-5 ${formData.interpretationSetting === 'phone' ? 'text-white' : 'text-gray-500'}`} />
-                            <span className={`text-xs font-semibold ${formData.interpretationSetting === 'phone' ? 'text-white' : 'text-gray-600'}`}>Phone</span>
+                            <Phone className={`w-5 h-5 ${formData.interpretationSetting === 'phone' ? 'text-purple-600' : 'text-gray-500'}`} />
+                            <span className={`text-xs font-semibold ${formData.interpretationSetting === 'phone' ? 'text-purple-700' : 'text-gray-600'}`}>Phone</span>
                           </button>
                         </div>
                       </div>
@@ -535,19 +1062,19 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                             onClick={() => setFormData(prev => ({ ...prev, interpretationMode: 'consecutive' }))}
                             className={`relative flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
                               formData.interpretationMode === 'consecutive'
-                                ? 'border-blue-600 bg-blue-600 shadow-lg shadow-blue-600/30'
-                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                ? 'border-purple-500 bg-purple-50'
+                                : 'border-gray-200 bg-white hover:border-purple-300 hover:bg-gray-50'
                             }`}
                           >
                             {formData.interpretationMode === 'consecutive' && (
-                              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white">
+                              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center border-2 border-white">
                                 <Check className="w-3 h-3 text-white" />
                               </div>
                             )}
-                            <Users className={`w-5 h-5 ${formData.interpretationMode === 'consecutive' ? 'text-white' : 'text-gray-500'}`} />
+                            <Users className={`w-5 h-5 ${formData.interpretationMode === 'consecutive' ? 'text-purple-600' : 'text-gray-500'}`} />
                             <div className="text-left">
-                              <span className={`text-xs font-semibold block ${formData.interpretationMode === 'consecutive' ? 'text-white' : 'text-gray-700'}`}>Consecutive</span>
-                              <span className={`text-[10px] ${formData.interpretationMode === 'consecutive' ? 'text-blue-100' : 'text-gray-500'}`}>Speaker pauses for interpreter</span>
+                              <span className={`text-xs font-semibold block ${formData.interpretationMode === 'consecutive' ? 'text-purple-700' : 'text-gray-700'}`}>Consecutive</span>
+                              <span className={`text-[10px] ${formData.interpretationMode === 'consecutive' ? 'text-purple-500' : 'text-gray-500'}`}>Speaker pauses for interpreter</span>
                             </div>
                           </button>
                           <button
@@ -555,19 +1082,19 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                             onClick={() => setFormData(prev => ({ ...prev, interpretationMode: 'simultaneous' }))}
                             className={`relative flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
                               formData.interpretationMode === 'simultaneous'
-                                ? 'border-blue-600 bg-blue-600 shadow-lg shadow-blue-600/30'
-                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                ? 'border-purple-500 bg-purple-50'
+                                : 'border-gray-200 bg-white hover:border-purple-300 hover:bg-gray-50'
                             }`}
                           >
                             {formData.interpretationMode === 'simultaneous' && (
-                              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white">
+                              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center border-2 border-white">
                                 <Check className="w-3 h-3 text-white" />
                               </div>
                             )}
-                            <Mic className={`w-5 h-5 ${formData.interpretationMode === 'simultaneous' ? 'text-white' : 'text-gray-500'}`} />
+                            <Mic className={`w-5 h-5 ${formData.interpretationMode === 'simultaneous' ? 'text-purple-600' : 'text-gray-500'}`} />
                             <div className="text-left">
-                              <span className={`text-xs font-semibold block ${formData.interpretationMode === 'simultaneous' ? 'text-white' : 'text-gray-700'}`}>Simultaneous</span>
-                              <span className={`text-[10px] ${formData.interpretationMode === 'simultaneous' ? 'text-blue-100' : 'text-gray-500'}`}>Real-time interpretation</span>
+                              <span className={`text-xs font-semibold block ${formData.interpretationMode === 'simultaneous' ? 'text-purple-700' : 'text-gray-700'}`}>Simultaneous</span>
+                              <span className={`text-[10px] ${formData.interpretationMode === 'simultaneous' ? 'text-purple-500' : 'text-gray-500'}`}>Real-time interpretation</span>
                             </div>
                           </button>
                         </div>
@@ -582,60 +1109,423 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                           placeholder="e.g., Medical appointment, Legal deposition, Business meeting..."
                           value={formData.subjectMatter}
                           onChange={handleChange}
-                          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
                         />
                       </div>
 
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-700 mb-2">
-                            <Calendar className="w-3.5 h-3.5 inline mr-1.5 text-purple-600" />
-                            Date Needed
-                          </label>
-                          <input
-                            type="date"
-                            name="interpretationDate"
-                            value={formData.interpretationDate}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-700 mb-2">Time</label>
-                          <input
-                            type="time"
-                            name="interpretationTime"
-                            value={formData.interpretationTime}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
-                          />
+                      {/* Date Selection Mode */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-2">
+                          <Calendar className="w-3.5 h-3.5 inline mr-1.5 text-purple-600" />
+                          Date Selection
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ 
+                              ...prev, 
+                              dateSelectionMode: 'single',
+                              dateTimeEntries: prev.dateTimeEntries.length === 0 ? [{ id: '1', date: '', startTime: '', endTime: '' }] : prev.dateTimeEntries.slice(0, 1)
+                            }))}
+                            className={`relative flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-all ${
+                              formData.dateSelectionMode === 'single'
+                                ? 'border-purple-500 bg-purple-50'
+                                : 'border-gray-200 bg-white hover:border-purple-300'
+                            }`}
+                          >
+                            <Calendar className={`w-4 h-4 ${formData.dateSelectionMode === 'single' ? 'text-purple-600' : 'text-gray-500'}`} />
+                            <span className={`text-[11px] font-medium ${formData.dateSelectionMode === 'single' ? 'text-purple-700' : 'text-gray-600'}`}>Single Date</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, dateSelectionMode: 'range', dateTimeEntries: [] }))}
+                            className={`relative flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-all ${
+                              formData.dateSelectionMode === 'range'
+                                ? 'border-purple-500 bg-purple-50'
+                                : 'border-gray-200 bg-white hover:border-purple-300'
+                            }`}
+                          >
+                            <CalendarRange className={`w-4 h-4 ${formData.dateSelectionMode === 'range' ? 'text-purple-600' : 'text-gray-500'}`} />
+                            <span className={`text-[11px] font-medium ${formData.dateSelectionMode === 'range' ? 'text-purple-700' : 'text-gray-600'}`}>Date Range</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ 
+                              ...prev, 
+                              dateSelectionMode: 'multiple',
+                              dateTimeEntries: prev.dateTimeEntries.length === 0 ? [{ id: '1', date: '', startTime: '', endTime: '' }] : prev.dateTimeEntries
+                            }))}
+                            className={`relative flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-all ${
+                              formData.dateSelectionMode === 'multiple'
+                                ? 'border-purple-500 bg-purple-50'
+                                : 'border-gray-200 bg-white hover:border-purple-300'
+                            }`}
+                          >
+                            <CalendarDays className={`w-4 h-4 ${formData.dateSelectionMode === 'multiple' ? 'text-purple-600' : 'text-gray-500'}`} />
+                            <span className={`text-[11px] font-medium ${formData.dateSelectionMode === 'multiple' ? 'text-purple-700' : 'text-gray-600'}`}>Multiple</span>
+                          </button>
                         </div>
                       </div>
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-700 mb-2">Estimated Duration</label>
-                          <input
-                            type="text"
-                            name="interpretationDuration"
-                            placeholder="e.g., 2 hours"
-                            value={formData.interpretationDuration}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
-                          />
+
+                      {/* Date Range Mode */}
+                      {formData.dateSelectionMode === 'range' && (
+                        <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
+                              <input
+                                type="date"
+                                value={formData.dateRangeStart}
+                                onChange={(e) => {
+                                  const startDate = e.target.value
+                                  setFormData(prev => {
+                                    // Generate date entries for range if timeMode is different
+                                    if (prev.timeMode === 'different' && startDate && prev.dateRangeEnd) {
+                                      const entries = generateDateEntriesForRange(startDate, prev.dateRangeEnd)
+                                      return { ...prev, dateRangeStart: startDate, dateTimeEntries: entries }
+                                    }
+                                    return { ...prev, dateRangeStart: startDate }
+                                  })
+                                }}
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">End Date</label>
+                              <input
+                                type="date"
+                                value={formData.dateRangeEnd}
+                                onChange={(e) => {
+                                  const endDate = e.target.value
+                                  setFormData(prev => {
+                                    // Generate date entries for range if timeMode is different
+                                    if (prev.timeMode === 'different' && prev.dateRangeStart && endDate) {
+                                      const entries = generateDateEntriesForRange(prev.dateRangeStart, endDate)
+                                      return { ...prev, dateRangeEnd: endDate, dateTimeEntries: entries }
+                                    }
+                                    return { ...prev, dateRangeEnd: endDate }
+                                  })
+                                }}
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Time Mode Toggle for Range */}
+                          {formData.dateRangeStart && formData.dateRangeEnd && (
+                            <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
+                              <span className="text-xs text-gray-600">Time:</span>
+                              <button
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, timeMode: 'same', dateTimeEntries: [] }))}
+                                className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                                  formData.timeMode === 'same' 
+                                    ? 'bg-purple-600 text-white' 
+                                    : 'bg-white text-gray-600 hover:bg-gray-100'
+                                }`}
+                              >
+                                Same for all days
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const entries = generateDateEntriesForRange(formData.dateRangeStart, formData.dateRangeEnd)
+                                  setFormData(prev => ({ ...prev, timeMode: 'different', dateTimeEntries: entries }))
+                                }}
+                                className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                                  formData.timeMode === 'different' 
+                                    ? 'bg-purple-600 text-white' 
+                                    : 'bg-white text-gray-600 hover:bg-gray-100'
+                                }`}
+                              >
+                                Different per day
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Same time for all days */}
+                          {formData.timeMode === 'same' && (
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">
+                                  <Clock className="w-3 h-3 inline mr-1" />
+                                  Start Time (all days)
+                                </label>
+                                <TimePicker
+                                  value={formData.sharedStartTime}
+                                  onChange={(value) => setFormData(prev => ({ ...prev, sharedStartTime: value }))}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">End Time (all days)</label>
+                                <TimePicker
+                                  value={formData.sharedEndTime}
+                                  onChange={(value) => setFormData(prev => ({ ...prev, sharedEndTime: value }))}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Different time per day */}
+                          {formData.timeMode === 'different' && formData.dateTimeEntries.length > 0 && (
+                            <div className="space-y-2 max-h-48 overflow-y-auto">
+                              {formData.dateTimeEntries.map((entry, index) => (
+                                <div key={entry.id} className="grid grid-cols-3 gap-2 p-2 bg-white rounded border border-gray-100">
+                                  <div>
+                                    <label className="block text-[10px] font-medium text-gray-500 mb-1">
+                                      {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                    </label>
+                                    <input
+                                      type="date"
+                                      value={entry.date}
+                                      disabled
+                                      className="w-full px-2 py-1.5 border border-gray-100 rounded text-sm bg-gray-50 text-gray-500"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-medium text-gray-500 mb-1">Start</label>
+                                    <TimePicker
+                                      value={entry.startTime}
+                                      onChange={(value) => {
+                                        const newEntries = [...formData.dateTimeEntries]
+                                        newEntries[index] = { ...entry, startTime: value }
+                                        setFormData(prev => ({ ...prev, dateTimeEntries: newEntries }))
+                                      }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-medium text-gray-500 mb-1">End</label>
+                                    <TimePicker
+                                      value={entry.endTime}
+                                      onChange={(value) => {
+                                        const newEntries = [...formData.dateTimeEntries]
+                                        newEntries[index] = { ...entry, endTime: value }
+                                        setFormData(prev => ({ ...prev, dateTimeEntries: newEntries }))
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-700 mb-2">
-                            <MapPin className="w-3.5 h-3.5 inline mr-1.5 text-purple-600" />
-                            Location
-                          </label>
+                      )}
+
+                      {/* Single or Multiple Dates Mode */}
+                      {(formData.dateSelectionMode === 'single' || formData.dateSelectionMode === 'multiple') && (
+                        <div className="space-y-3">
+                          {/* Time Mode Toggle (only for multiple) */}
+                          {formData.dateSelectionMode === 'multiple' && formData.dateTimeEntries.length > 1 && (
+                            <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
+                              <span className="text-xs text-gray-600">Time:</span>
+                              <button
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, timeMode: 'same' }))}
+                                className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                                  formData.timeMode === 'same' 
+                                    ? 'bg-purple-600 text-white' 
+                                    : 'bg-white text-gray-600 hover:bg-gray-100'
+                                }`}
+                              >
+                                Same for all
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, timeMode: 'different' }))}
+                                className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                                  formData.timeMode === 'different' 
+                                    ? 'bg-purple-600 text-white' 
+                                    : 'bg-white text-gray-600 hover:bg-gray-100'
+                                }`}
+                              >
+                                Different per date
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Shared Time (when same for all) */}
+                          {formData.dateSelectionMode === 'multiple' && formData.timeMode === 'same' && formData.dateTimeEntries.length > 1 && (
+                            <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-lg">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">
+                                  <Clock className="w-3 h-3 inline mr-1" />
+                                  Start Time (all dates)
+                                </label>
+                                <TimePicker
+                                  value={formData.sharedStartTime}
+                                  onChange={(value) => setFormData(prev => ({ ...prev, sharedStartTime: value }))}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">End Time (all dates)</label>
+                                <TimePicker
+                                  value={formData.sharedEndTime}
+                                  onChange={(value) => setFormData(prev => ({ ...prev, sharedEndTime: value }))}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Date Entries */}
+                          <div className="space-y-2">
+                            {formData.dateTimeEntries.map((entry, index) => (
+                              <div key={entry.id} className="flex items-start gap-2 p-2.5 bg-gray-50 rounded-lg">
+                                <div className="flex-1 grid grid-cols-3 gap-2">
+                                  <div>
+                                    <label className="block text-[10px] font-medium text-gray-500 mb-1">Date {formData.dateSelectionMode === 'multiple' ? index + 1 : ''}</label>
+                                    <input
+                                      type="date"
+                                      value={entry.date}
+                                      onChange={(e) => {
+                                        const newEntries = [...formData.dateTimeEntries]
+                                        newEntries[index] = { ...entry, date: e.target.value }
+                                        setFormData(prev => ({ ...prev, dateTimeEntries: newEntries }))
+                                      }}
+                                      className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm"
+                                    />
+                                  </div>
+                                  {(formData.dateSelectionMode === 'single' || formData.timeMode === 'different') && (
+                                    <>
+                                      <div>
+                                        <label className="block text-[10px] font-medium text-gray-500 mb-1">Start Time</label>
+                                        <TimePicker
+                                          value={entry.startTime}
+                                          onChange={(value) => {
+                                            const newEntries = [...formData.dateTimeEntries]
+                                            newEntries[index] = { ...entry, startTime: value }
+                                            setFormData(prev => ({ ...prev, dateTimeEntries: newEntries }))
+                                          }}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-[10px] font-medium text-gray-500 mb-1">End Time</label>
+                                        <TimePicker
+                                          value={entry.endTime}
+                                          onChange={(value) => {
+                                            const newEntries = [...formData.dateTimeEntries]
+                                            newEntries[index] = { ...entry, endTime: value }
+                                            setFormData(prev => ({ ...prev, dateTimeEntries: newEntries }))
+                                          }}
+                                        />
+                                      </div>
+                                    </>
+                                  )}
+                                  {formData.dateSelectionMode === 'multiple' && formData.timeMode === 'same' && (
+                                    <div className="col-span-2 flex items-end pb-1">
+                                      <span className="text-xs text-gray-400">Using shared time</span>
+                                    </div>
+                                  )}
+                                </div>
+                                {formData.dateSelectionMode === 'multiple' && formData.dateTimeEntries.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newEntries = formData.dateTimeEntries.filter(e => e.id !== entry.id)
+                                      setFormData(prev => ({ ...prev, dateTimeEntries: newEntries }))
+                                    }}
+                                    className="mt-5 p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Add Date Button (only for multiple mode) */}
+                          {formData.dateSelectionMode === 'multiple' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newEntry: DateTimeEntry = {
+                                  id: Date.now().toString(),
+                                  date: '',
+                                  startTime: '',
+                                  endTime: ''
+                                }
+                                setFormData(prev => ({ ...prev, dateTimeEntries: [...prev.dateTimeEntries, newEntry] }))
+                              }}
+                              className="w-full flex items-center justify-center gap-1.5 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors text-sm"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add Another Date
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Location - only for In-Person */}
+                      <div className={formData.interpretationSetting !== 'in-person' ? 'opacity-50' : ''}>
+                        <label className="block text-xs font-semibold text-gray-700 mb-2">
+                          <MapPin className="w-3.5 h-3.5 inline mr-1.5 text-purple-600" />
+                          Location {formData.interpretationSetting !== 'in-person' && <span className="text-gray-400 font-normal">(In-Person only)</span>}
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
                           <input
                             type="text"
                             name="interpretationLocation"
-                            placeholder="e.g., Miami, FL"
+                            placeholder="Address or Virtual"
                             value={formData.interpretationLocation}
                             onChange={handleChange}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                            disabled={formData.interpretationSetting !== 'in-person'}
+                            className={`w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm ${formData.interpretationSetting !== 'in-person' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                           />
+                          <input
+                            type="text"
+                            name="interpretationCity"
+                            placeholder="City"
+                            value={formData.interpretationCity}
+                            onChange={handleChange}
+                            disabled={formData.interpretationSetting !== 'in-person'}
+                            className={`w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm ${formData.interpretationSetting !== 'in-person' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                          />
+                          {/* State Searchable Dropdown */}
+                          <div className="relative" ref={stateDropdownRef}>
+                            <input
+                              type="text"
+                              placeholder="State"
+                              autoComplete="new-password"
+                              data-lpignore="true"
+                              data-form-type="other"
+                              disabled={formData.interpretationSetting !== 'in-person'}
+                              value={stateDropdownOpen ? stateSearchTerm : formData.interpretationState}
+                              onChange={(e) => {
+                                if (formData.interpretationSetting !== 'in-person') return
+                                setStateSearchTerm(e.target.value)
+                                if (!stateDropdownOpen) setStateDropdownOpen(true)
+                              }}
+                              onFocus={() => {
+                                if (formData.interpretationSetting !== 'in-person') return
+                                setStateDropdownOpen(true)
+                                setStateSearchTerm('')
+                              }}
+                              className={`w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm ${formData.interpretationSetting !== 'in-person' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                            />
+                            {stateDropdownOpen && formData.interpretationSetting === 'in-person' && (
+                              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                {filteredStates.length > 0 ? (
+                                  filteredStates.map((state) => (
+                                    <button
+                                      key={state.code}
+                                      type="button"
+                                      onClick={() => {
+                                        setFormData(prev => ({ ...prev, interpretationState: state.name }))
+                                        setStateDropdownOpen(false)
+                                        setStateSearchTerm('')
+                                      }}
+                                      className={`w-full px-3 py-2 text-left text-sm hover:bg-purple-50 transition-colors ${
+                                        formData.interpretationState === state.name ? 'bg-purple-100 text-purple-700 font-medium' : 'text-gray-700'
+                                      }`}
+                                    >
+                                      <span className="font-medium">{state.code}</span> - {state.name}
+                                    </button>
+                                  ))
+                                ) : (
+                                  <div className="px-3 py-2 text-sm text-gray-500">No states found</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -764,7 +1654,53 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                             <span className="ml-2 font-medium text-gray-900">{formData.subjectMatter}</span>
                           </div>
                         )}
+                        {(formData.interpretationLocation || formData.interpretationCity || formData.interpretationState) && (
+                          <div>
+                            <span className="text-gray-500">Location:</span>
+                            <span className="ml-2 font-medium text-gray-900">
+                              {[formData.interpretationLocation, formData.interpretationCity, formData.interpretationState].filter(Boolean).join(', ')}
+                            </span>
+                          </div>
+                        )}
                       </div>
+                      {/* Date/Time Summary for Interpretation */}
+                      {formData.serviceType === 'interpretation' && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <span className="text-xs font-medium text-gray-500">Schedule:</span>
+                          {formData.dateSelectionMode === 'range' && (
+                            <div className="mt-1 text-sm">
+                              <span className="font-medium text-gray-900">
+                                {formData.dateRangeStart} to {formData.dateRangeEnd}
+                              </span>
+                              {formData.sharedStartTime && formData.sharedEndTime && (
+                                <span className="text-gray-600 ml-2">
+                                  ({formData.sharedStartTime} - {formData.sharedEndTime} daily)
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {(formData.dateSelectionMode === 'single' || formData.dateSelectionMode === 'multiple') && formData.dateTimeEntries.length > 0 && (
+                            <div className="mt-1 space-y-1">
+                              {formData.dateTimeEntries.map((entry, idx) => (
+                                <div key={entry.id} className="text-sm">
+                                  <span className="font-medium text-gray-900">{entry.date}</span>
+                                  {formData.timeMode === 'same' && formData.dateSelectionMode === 'multiple' ? (
+                                    <span className="text-gray-600 ml-2">
+                                      ({formData.sharedStartTime} - {formData.sharedEndTime})
+                                    </span>
+                                  ) : (
+                                    entry.startTime && entry.endTime && (
+                                      <span className="text-gray-600 ml-2">
+                                        ({entry.startTime} - {entry.endTime})
+                                      </span>
+                                    )
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="bg-gray-50 rounded-xl p-4">
