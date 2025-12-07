@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { 
   CheckCircle2, Loader2, ArrowRight, ArrowLeft, FileText, Mic, 
-  Globe, User, Calendar, MessageSquare, Check
+  Globe, User, Calendar, MessageSquare, Check, MapPin, Video, Phone, Users
 } from 'lucide-react'
 
 interface Language {
@@ -50,6 +50,9 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
     wordCount: '',
     deadline: '',
     interpretationType: '',
+    interpretationSetting: '', // In-Person, Video-Remote, Over the Phone
+    interpretationMode: '', // Consecutive, Simultaneous
+    subjectMatter: '',
     interpretationDate: '',
     interpretationTime: '',
     interpretationDuration: '',
@@ -201,7 +204,8 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                     setFormData({
                       serviceType: '', sourceLanguageId: '', targetLanguageId: '',
                       documentType: '', wordCount: '', deadline: '',
-                      interpretationType: '', interpretationDate: '', interpretationTime: '',
+                      interpretationType: '', interpretationSetting: '', interpretationMode: '',
+                      subjectMatter: '', interpretationDate: '', interpretationTime: '',
                       interpretationDuration: '', interpretationLocation: '',
                       firstName: '', lastName: '', email: '', phone: '', company: '',
                       description: '', howDidYouHear: '',
@@ -464,27 +468,127 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                   {/* Interpretation-specific fields */}
                   {formData.serviceType === 'interpretation' && (
                     <div className="space-y-4 pt-3 border-t border-gray-100">
+                      {/* Setting Selection - Quick Icons */}
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Type of Interpretation</label>
-                        <select
-                          name="interpretationType"
-                          value={formData.interpretationType}
-                          onChange={handleChange}
-                          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white text-sm"
-                        >
-                          <option value="">Select type</option>
-                          <option value="deposition">Deposition</option>
-                          <option value="court">Court Hearing/Trial</option>
-                          <option value="ime">Independent Medical Exam (IME)</option>
-                          <option value="euo">Examination Under Oath (EUO)</option>
-                          <option value="medical">Medical Appointment</option>
-                          <option value="conference">Conference/Meeting</option>
-                          <option value="other">Other</option>
-                        </select>
+                        <label className="block text-xs font-semibold text-gray-700 mb-2">Setting *</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, interpretationSetting: 'in-person' }))}
+                            className={`relative flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
+                              formData.interpretationSetting === 'in-person'
+                                ? 'border-blue-600 bg-blue-600 shadow-lg shadow-blue-600/30'
+                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {formData.interpretationSetting === 'in-person' && (
+                              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white">
+                                <Check className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+                            <MapPin className={`w-5 h-5 ${formData.interpretationSetting === 'in-person' ? 'text-white' : 'text-gray-500'}`} />
+                            <span className={`text-xs font-semibold ${formData.interpretationSetting === 'in-person' ? 'text-white' : 'text-gray-600'}`}>In-Person</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, interpretationSetting: 'video-remote' }))}
+                            className={`relative flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
+                              formData.interpretationSetting === 'video-remote'
+                                ? 'border-blue-600 bg-blue-600 shadow-lg shadow-blue-600/30'
+                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {formData.interpretationSetting === 'video-remote' && (
+                              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white">
+                                <Check className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+                            <Video className={`w-5 h-5 ${formData.interpretationSetting === 'video-remote' ? 'text-white' : 'text-gray-500'}`} />
+                            <span className={`text-xs font-semibold ${formData.interpretationSetting === 'video-remote' ? 'text-white' : 'text-gray-600'}`}>Video</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, interpretationSetting: 'phone' }))}
+                            className={`relative flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
+                              formData.interpretationSetting === 'phone'
+                                ? 'border-blue-600 bg-blue-600 shadow-lg shadow-blue-600/30'
+                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {formData.interpretationSetting === 'phone' && (
+                              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white">
+                                <Check className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+                            <Phone className={`w-5 h-5 ${formData.interpretationSetting === 'phone' ? 'text-white' : 'text-gray-500'}`} />
+                            <span className={`text-xs font-semibold ${formData.interpretationSetting === 'phone' ? 'text-white' : 'text-gray-600'}`}>Phone</span>
+                          </button>
+                        </div>
                       </div>
+
+                      {/* Mode of Interpretation - Quick Icons */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-2">Mode of Interpretation *</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, interpretationMode: 'consecutive' }))}
+                            className={`relative flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
+                              formData.interpretationMode === 'consecutive'
+                                ? 'border-blue-600 bg-blue-600 shadow-lg shadow-blue-600/30'
+                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {formData.interpretationMode === 'consecutive' && (
+                              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white">
+                                <Check className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+                            <Users className={`w-5 h-5 ${formData.interpretationMode === 'consecutive' ? 'text-white' : 'text-gray-500'}`} />
+                            <div className="text-left">
+                              <span className={`text-xs font-semibold block ${formData.interpretationMode === 'consecutive' ? 'text-white' : 'text-gray-700'}`}>Consecutive</span>
+                              <span className={`text-[10px] ${formData.interpretationMode === 'consecutive' ? 'text-blue-100' : 'text-gray-500'}`}>Speaker pauses for interpreter</span>
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, interpretationMode: 'simultaneous' }))}
+                            className={`relative flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
+                              formData.interpretationMode === 'simultaneous'
+                                ? 'border-blue-600 bg-blue-600 shadow-lg shadow-blue-600/30'
+                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {formData.interpretationMode === 'simultaneous' && (
+                              <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white">
+                                <Check className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+                            <Mic className={`w-5 h-5 ${formData.interpretationMode === 'simultaneous' ? 'text-white' : 'text-gray-500'}`} />
+                            <div className="text-left">
+                              <span className={`text-xs font-semibold block ${formData.interpretationMode === 'simultaneous' ? 'text-white' : 'text-gray-700'}`}>Simultaneous</span>
+                              <span className={`text-[10px] ${formData.interpretationMode === 'simultaneous' ? 'text-blue-100' : 'text-gray-500'}`}>Real-time interpretation</span>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Subject Matter */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-2">Subject Matter</label>
+                        <input
+                          type="text"
+                          name="subjectMatter"
+                          placeholder="e.g., Medical appointment, Legal deposition, Business meeting..."
+                          value={formData.subjectMatter}
+                          onChange={handleChange}
+                          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                        />
+                      </div>
+
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-900 mb-2">
+                          <label className="block text-xs font-semibold text-gray-700 mb-2">
                             <Calendar className="w-3.5 h-3.5 inline mr-1.5 text-purple-600" />
                             Date Needed
                           </label>
@@ -493,41 +597,44 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                             name="interpretationDate"
                             value={formData.interpretationDate}
                             onChange={handleChange}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-900 mb-2">Time</label>
+                          <label className="block text-xs font-semibold text-gray-700 mb-2">Time</label>
                           <input
                             type="time"
                             name="interpretationTime"
                             value={formData.interpretationTime}
                             onChange={handleChange}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
                           />
                         </div>
                       </div>
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-900 mb-2">Estimated Duration</label>
+                          <label className="block text-xs font-semibold text-gray-700 mb-2">Estimated Duration</label>
                           <input
                             type="text"
                             name="interpretationDuration"
                             placeholder="e.g., 2 hours"
                             value={formData.interpretationDuration}
                             onChange={handleChange}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-900 mb-2">Location (City, State)</label>
+                          <label className="block text-xs font-semibold text-gray-700 mb-2">
+                            <MapPin className="w-3.5 h-3.5 inline mr-1.5 text-purple-600" />
+                            Location
+                          </label>
                           <input
                             type="text"
                             name="interpretationLocation"
                             placeholder="e.g., Miami, FL"
                             value={formData.interpretationLocation}
                             onChange={handleChange}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
                           />
                         </div>
                       </div>
@@ -639,10 +746,22 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                             <span className="ml-2 font-medium text-gray-900 capitalize">{formData.documentType.replace('-', ' ')}</span>
                           </div>
                         )}
-                        {formData.interpretationType && (
+                        {formData.interpretationSetting && (
                           <div>
-                            <span className="text-gray-500">Interpretation Type:</span>
-                            <span className="ml-2 font-medium text-gray-900 capitalize">{formData.interpretationType}</span>
+                            <span className="text-gray-500">Setting:</span>
+                            <span className="ml-2 font-medium text-gray-900 capitalize">{formData.interpretationSetting.replace('-', ' ')}</span>
+                          </div>
+                        )}
+                        {formData.interpretationMode && (
+                          <div>
+                            <span className="text-gray-500">Mode:</span>
+                            <span className="ml-2 font-medium text-gray-900 capitalize">{formData.interpretationMode}</span>
+                          </div>
+                        )}
+                        {formData.subjectMatter && (
+                          <div>
+                            <span className="text-gray-500">Subject:</span>
+                            <span className="ml-2 font-medium text-gray-900">{formData.subjectMatter}</span>
                           </div>
                         )}
                       </div>
