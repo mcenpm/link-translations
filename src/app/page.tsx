@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Metadata } from 'next'
-import { ArrowRight, Clock, Award } from 'lucide-react'
+import { ArrowRight, Clock, Award, Shield, Globe, CheckCircle2, FileText, Mic } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'LINK Translations | Professional Language Services Since 1995',
@@ -10,56 +10,153 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <>
-      {/* Hero Section - Light & Clean */}
-      <section className="pt-32 pb-20 bg-gradient-to-b from-gray-50 to-white">
+      {/* Hero Section - Split Layout */}
+      <section className="pt-28 pb-16 bg-gradient-to-br from-gray-50 via-white to-blue-50/30">
         <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm mb-8 shadow-sm">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
-              <span className="text-gray-600">Trusted by 10,000+ clients since 1995</span>
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Left Side - Content */}
+            <div>
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm mb-6 shadow-sm">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                <span className="text-gray-600">Trusted by 10,000+ clients since 1995</span>
+              </div>
+              
+              {/* Headline */}
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-[1.1] tracking-tight">
+                Translation & Interpretation{' '}
+                <span className="text-blue-600">Done Right</span>
+              </h1>
+              
+              {/* Subheadline */}
+              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+                Certified translations and professional interpreters in 150+ languages. 
+                Fast turnaround, accurate results, always human-reviewed.
+              </p>
+              
+              {/* Trust Points */}
+              <div className="space-y-3 mb-8">
+                <div className="flex items-center gap-3 text-gray-700">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                  <span>100% USCIS acceptance rate</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-700">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                  <span>24-48 hour turnaround available</span>
+                </div>
+                <div className="flex items-center gap-3 text-gray-700">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                  <span>Certified native-speaking translators</span>
+                </div>
+              </div>
+
+              {/* Phone CTA */}
+              <div className="flex items-center gap-4">
+                <a href="tel:1-877-272-5465" className="inline-flex items-center gap-2 px-6 py-3 bg-white text-gray-900 rounded-full font-semibold border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all">
+                  📞 1-877-272-LINK
+                </a>
+                <span className="text-sm text-gray-500">Mon-Fri, 9am - 6pm EST</span>
+              </div>
+              
+              {/* Stats Row */}
+              <div className="flex flex-wrap gap-8 pt-8 mt-8 border-t border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-gray-900">150+</div>
+                    <div className="text-xs text-gray-500">Languages</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-gray-900">29 Years</div>
+                    <div className="text-xs text-gray-500">Experience</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-gray-900">24-48h</div>
+                    <div className="text-xs text-gray-500">Turnaround</div>
+                  </div>
+                </div>
+              </div>
             </div>
-            
-            {/* Headline */}
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-[1.1] tracking-tight">
-              Translation & Interpretation{' '}
-              <span className="text-blue-600">Done Right</span>
-            </h1>
-            
-            {/* Subheadline */}
-            <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
-              Certified translations and professional interpreters in 150+ languages. 
-              Fast turnaround, accurate results, always human-reviewed.
-            </p>
-            
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <Link href="/quote" className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-full font-semibold text-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30">
-                Get a Free Quote
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <a href="tel:1-877-272-5465" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-gray-900 rounded-full font-semibold text-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all">
-                📞 1-877-272-LINK
-              </a>
-            </div>
-            
-            {/* Stats Row */}
-            <div className="flex flex-wrap justify-center gap-12 pt-8 border-t border-gray-200">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-gray-900">150+</div>
-                <div className="text-sm text-gray-500 mt-1">Languages</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold text-gray-900">26,500</div>
-                <div className="text-sm text-gray-500 mt-1">Expert Linguists</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold text-gray-900">35,000+</div>
-                <div className="text-sm text-gray-500 mt-1">Projects Delivered</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold text-gray-900">24-48h</div>
-                <div className="text-sm text-gray-500 mt-1">Turnaround</div>
+
+            {/* Right Side - Service Selection Cards */}
+            <div className="lg:pl-8">
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5 text-center">
+                  <h2 className="text-xl font-bold text-white">Get a Free Quote</h2>
+                  <p className="text-blue-100 text-sm mt-1">Select the service you need</p>
+                </div>
+
+                {/* Service Cards */}
+                <div className="p-6 space-y-4">
+                  {/* Translation Card */}
+                  <Link 
+                    href="/quote?service=translation"
+                    className="group block bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-transparent hover:border-blue-300 hover:shadow-lg transition-all"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/25">
+                        <FileText className="w-7 h-7 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
+                          Document Translation
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Certified translations for legal, medical, business & personal documents
+                        </p>
+                        <div className="flex items-center gap-2 text-blue-600 font-medium text-sm">
+                          Request Quote
+                          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+
+                  {/* Interpretation Card */}
+                  <Link 
+                    href="/quote?service=interpretation"
+                    className="group block bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-transparent hover:border-purple-300 hover:shadow-lg transition-all"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-500/25">
+                        <Mic className="w-7 h-7 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-purple-600 transition-colors">
+                          Interpretation Services
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Court, medical, conference & on-site interpreters nationwide
+                        </p>
+                        <div className="flex items-center gap-2 text-purple-600 font-medium text-sm">
+                          Request Quote
+                          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+
+                  {/* Quick Contact */}
+                  <div className="pt-4 border-t border-gray-100 text-center">
+                    <p className="text-sm text-gray-500 mb-2">Need immediate assistance?</p>
+                    <a href="tel:1-877-272-5465" className="text-lg font-bold text-blue-600 hover:text-blue-700">
+                      📞 1-877-272-LINK
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

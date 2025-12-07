@@ -91,7 +91,7 @@ export function Header() {
             
             {status === 'loading' ? (
               <div className="w-24 h-10 bg-gray-100 rounded-full animate-pulse" />
-            ) : session ? (
+            ) : session && !(session.user as { isAdmin?: boolean })?.isAdmin ? (
               <div className="flex items-center gap-2">
                 <Link 
                   href="/dashboard"
