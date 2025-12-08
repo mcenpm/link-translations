@@ -111,7 +111,7 @@ function TimePicker({ value, onChange }: TimePickerProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [hourInput, setHourInput] = useState('')
   const [minuteInput, setMinuteInput] = useState('')
-  const [periodInput, setPeriodInput] = useState<'AM' | 'PM'>('AM')
+  const [periodInput, setPeriodInput] = useState<'AM' | 'PM' | ''>('')
   const [focusedSection, setFocusedSection] = useState<'hour' | 'minute' | 'period' | null>(null)
   const [inputBuffer, setInputBuffer] = useState('')
   
@@ -127,7 +127,7 @@ function TimePicker({ value, onChange }: TimePickerProps) {
     const { hour, minute, period } = to12Hour(value)
     setHourInput(hour)
     setMinuteInput(minute)
-    setPeriodInput(period)
+    setPeriodInput(value ? period : '')
   }, [value])
   
   // Close on outside click
@@ -161,9 +161,9 @@ function TimePicker({ value, onChange }: TimePickerProps) {
   }, [isOpen, hourInput, minuteInput])
   
   // Update parent value
-  const updateValue = (h: string, m: string, p: 'AM' | 'PM') => {
-    if (h && m && !h.includes('_') && !m.includes('_')) {
-      onChange(to24Hour(h, m, p))
+  const updateValue = (h: string, m: string, p: 'AM' | 'PM' | '') => {
+    if (h && m && p && !h.includes('_') && !m.includes('_')) {
+      onChange(to24Hour(h, m, p as 'AM' | 'PM'))
     }
   }
   
@@ -293,7 +293,11 @@ function TimePicker({ value, onChange }: TimePickerProps) {
     }
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault()
-      const newPeriod = periodInput === 'AM' ? 'PM' : 'AM'
+      const newPeriod: 'AM' | 'PM' = !periodInput
+        ? (e.key === 'ArrowDown' ? 'PM' : 'AM')
+        : periodInput === 'AM'
+          ? 'PM'
+          : 'AM'
       setPeriodInput(newPeriod)
       updateValue(hourInput || '12', minuteInput || '00', newPeriod)
       return
@@ -336,7 +340,7 @@ function TimePicker({ value, onChange }: TimePickerProps) {
   const getDisplayValue = (section: 'hour' | 'minute' | 'period') => {
     if (section === 'hour') return hourInput.replace('_', ' ') || 'hh'
     if (section === 'minute') return minuteInput.replace('_', ' ') || 'mm'
-    return hourInput ? periodInput : 'aa'
+    return periodInput || 'aa'
   }
   
   return (
