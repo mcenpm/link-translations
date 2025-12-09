@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   CheckCircle2, Loader2, ArrowRight, ArrowLeft, FileText, Mic, 
   Globe, User, Calendar, MessageSquare, Check, MapPin, Video, Phone, Users,
-  CalendarRange, CalendarDays, Plus, X, Clock, ChevronDown
+  CalendarRange, CalendarDays, Plus, X, Clock, ChevronDown, Search
 } from 'lucide-react'
 
 // US States list
@@ -328,13 +328,36 @@ function TimePicker({ value, onChange }: TimePickerProps) {
     }
   }
   
-  const getSectionStyle = (section: 'hour' | 'minute' | 'period') => {
+  const getSectionStyle = (section: 'hour' | 'minute' | 'period'): { className: string; style: React.CSSProperties } => {
     const isFocused = focusedSection === section
-    return `w-8 text-center bg-transparent outline-none cursor-pointer transition-all rounded px-1 py-0.5 ${
-      isFocused 
-        ? 'bg-purple-600 text-white caret-transparent' 
-        : 'text-gray-700 hover:bg-purple-100'
-    }`
+    const hasValue = section === 'hour' 
+      ? hourInput && !hourInput.includes('_') && hourInput !== ''
+      : section === 'minute'
+        ? minuteInput && !minuteInput.includes('_') && minuteInput !== ''
+        : periodInput !== ''
+    
+    const baseClasses = 'w-8 text-center outline-none cursor-pointer transition-all rounded px-1 py-0.5'
+    
+    if (isFocused) {
+      return {
+        className: `${baseClasses}`,
+        style: { backgroundColor: '#9333ea', color: '#ffffff', caretColor: 'transparent' }
+      }
+    }
+    
+    // Not focused
+    if (hasValue) {
+      return {
+        className: `${baseClasses} hover:bg-purple-100`,
+        style: { backgroundColor: 'transparent', color: '#374151', caretColor: 'transparent' }
+      }
+    }
+    
+    // Placeholder (hh, mm, aa)
+    return {
+      className: `${baseClasses} hover:bg-purple-100`,
+      style: { backgroundColor: 'transparent', color: '#9ca3af', caretColor: 'transparent' }
+    }
   }
   
   const getDisplayValue = (section: 'hour' | 'minute' | 'period') => {
@@ -356,7 +379,8 @@ function TimePicker({ value, onChange }: TimePickerProps) {
             type="text"
             readOnly
             value={getDisplayValue('hour')}
-            className={getSectionStyle('hour')}
+            className={getSectionStyle('hour').className}
+            style={getSectionStyle('hour').style}
             onFocus={() => { setInputBuffer(''); setFocusedSection('hour') }}
             onBlur={() => {
               if (hourInput.includes('_')) {
@@ -375,7 +399,8 @@ function TimePicker({ value, onChange }: TimePickerProps) {
             type="text"
             readOnly
             value={getDisplayValue('minute')}
-            className={getSectionStyle('minute')}
+            className={getSectionStyle('minute').className}
+            style={getSectionStyle('minute').style}
             onFocus={() => { setInputBuffer(''); setFocusedSection('minute') }}
             onBlur={() => {
               if (minuteInput.includes('_')) {
@@ -394,7 +419,8 @@ function TimePicker({ value, onChange }: TimePickerProps) {
             type="text"
             readOnly
             value={getDisplayValue('period')}
-            className={getSectionStyle('period')}
+            className={getSectionStyle('period').className}
+            style={getSectionStyle('period').style}
             onFocus={() => { setInputBuffer(''); setFocusedSection('period') }}
             onKeyDown={handlePeriodKeyDown}
           />
@@ -488,6 +514,143 @@ function TimePicker({ value, onChange }: TimePickerProps) {
   )
 }
 
+// DatePicker Component with MM/DD/YYYY format
+interface DatePickerProps {
+  value: string // ISO format: YYYY-MM-DD
+  onChange: (value: string) => void
+  disabled?: boolean
+  minDate?: string // ISO format: YYYY-MM-DD, defaults to today
+}
+
+// Get today's date in ISO format
+const getTodayISO = () => {
+  const today = new Date()
+  return today.toISOString().split('T')[0]
+}
+
+function DatePicker({ value, onChange, disabled = false, minDate }: DatePickerProps) {
+  const [displayValue, setDisplayValue] = useState('')
+  const [error, setError] = useState('')
+  const hiddenInputRef = useRef<HTMLInputElement>(null)
+  
+  // Use today as default minimum date
+  const minimumDate = minDate ?? getTodayISO()
+  
+  // Convert ISO to MM/DD/YYYY for display
+  useEffect(() => {
+    if (value) {
+      const [year, month, day] = value.split('-')
+      setDisplayValue(`${month}/${day}/${year}`)
+    } else {
+      setDisplayValue('')
+    }
+  }, [value])
+  
+  // Check if date is valid (not in the past)
+  const isDateValid = (isoDate: string): boolean => {
+    return isoDate >= minimumDate
+  }
+  
+  // Handle text input with auto-formatting
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let input = e.target.value.replace(/[^\d/]/g, '')
+    
+    // Auto-add slashes
+    if (input.length === 2 && !input.includes('/')) {
+      input = input + '/'
+    } else if (input.length === 5 && input.split('/').length === 2) {
+      input = input + '/'
+    }
+    
+    // Limit to MM/DD/YYYY format (10 chars)
+    if (input.length > 10) {
+      input = input.slice(0, 10)
+    }
+    
+    setDisplayValue(input)
+    setError('')
+    
+    // Parse and validate when complete
+    if (input.length === 10) {
+      const parts = input.split('/')
+      if (parts.length === 3) {
+        const [month, day, year] = parts
+        const m = parseInt(month)
+        const d = parseInt(day)
+        const y = parseInt(year)
+        
+        if (m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900 && y <= 2100) {
+          // Convert to ISO format for storage
+          const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+          
+          if (isDateValid(isoDate)) {
+            onChange(isoDate)
+          } else {
+            setError('Past dates not allowed')
+            // Reset to empty or keep showing error
+            setTimeout(() => setError(''), 2000)
+          }
+        }
+      }
+    } else if (input === '') {
+      onChange('')
+    }
+  }
+  
+  // Handle native date picker change
+  const handleNativeDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isoValue = e.target.value
+    if (isoValue) {
+      if (isDateValid(isoValue)) {
+        onChange(isoValue)
+      }
+    }
+  }
+  
+  // Open native date picker when clicking the calendar icon
+  const openDatePicker = () => {
+    if (!disabled && hiddenInputRef.current) {
+      hiddenInputRef.current.showPicker()
+    }
+  }
+  
+  return (
+    <div className="relative">
+      <div className={`flex border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-transparent ${error ? 'border-red-400' : 'border-gray-200'}`}>
+        <input
+          type="text"
+          value={displayValue}
+          onChange={handleInputChange}
+          placeholder="mm/dd/yyyy"
+          disabled={disabled}
+          className="flex-1 px-3 py-2 text-sm focus:outline-none bg-transparent"
+        />
+        <input
+          ref={hiddenInputRef}
+          type="date"
+          value={value}
+          min={minimumDate}
+          onChange={handleNativeDateChange}
+          className="sr-only"
+          tabIndex={-1}
+          disabled={disabled}
+        />
+        <button
+          type="button"
+          onClick={openDatePicker}
+          disabled={disabled}
+          className="p-2 hover:bg-purple-50 transition-colors border-l border-gray-200"
+        >
+          <Calendar className="w-4 h-4 text-purple-500" />
+        </button>
+      </div>
+      {error && (
+        <p className="text-xs text-red-500 mt-1">{error}</p>
+      )}
+    </div>
+  )
+}
+
 interface QuoteWizardProps {
   languages: Language[]
 }
@@ -543,6 +706,11 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
   const [stateDropdownOpen, setStateDropdownOpen] = useState(false)
   const [stateSearchTerm, setStateSearchTerm] = useState('')
   const stateDropdownRef = useRef<HTMLDivElement>(null)
+  
+  // Target language dropdown states (for interpretation)
+  const [targetLangDropdownOpen, setTargetLangDropdownOpen] = useState(false)
+  const [targetLangSearchTerm, setTargetLangSearchTerm] = useState('')
+  const targetLangDropdownRef = useRef<HTMLDivElement>(null)
 
   const [formData, setFormData] = useState({
     // Step 1: Service Type
@@ -557,6 +725,7 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
     interpretationType: '',
     interpretationSetting: '', // In-Person, Video-Remote, Over the Phone
     interpretationMode: '', // Consecutive, Simultaneous
+    subjectMatterType: '' as 'deposition' | 'uscis' | 'hearing' | 'mediation' | 'other' | '',
     subjectMatter: '',
     // New date/time structure
     dateSelectionMode: '' as DateSelectionMode | '',
@@ -588,10 +757,28 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
       if (stateDropdownRef.current && !stateDropdownRef.current.contains(event.target as Node)) {
         setStateDropdownOpen(false)
       }
+      if (targetLangDropdownRef.current && !targetLangDropdownRef.current.contains(event.target as Node)) {
+        setTargetLangDropdownOpen(false)
+      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+  
+  // Find English language and set as default for interpretation
+  const englishLanguage = languages.find(lang => lang.name.toLowerCase() === 'english')
+  
+  useEffect(() => {
+    if (englishLanguage && formData.serviceType === 'interpretation' && !formData.sourceLanguageId) {
+      setFormData(prev => ({ ...prev, sourceLanguageId: englishLanguage.id }))
+    }
+  }, [englishLanguage, formData.serviceType, formData.sourceLanguageId])
+  
+  // Filter target languages (exclude English for interpretation)
+  const filteredTargetLanguages = formData.serviceType === 'interpretation'
+    ? languages.filter(lang => lang.name.toLowerCase() !== 'english' && 
+        lang.name.toLowerCase().includes(targetLangSearchTerm.toLowerCase()))
+    : languages
 
   // Filter states based on search term
   const filteredStates = US_STATES.filter(state => 
@@ -734,7 +921,7 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                       serviceType: '', sourceLanguageId: '', targetLanguageId: '',
                       documentType: '', wordCount: '', deadline: '',
                       interpretationType: '', interpretationSetting: '', interpretationMode: '',
-                      subjectMatter: '', dateSelectionMode: '', timeMode: 'same',
+                      subjectMatterType: '', subjectMatter: '', dateSelectionMode: '', timeMode: 'same',
                       dateRangeStart: '', dateRangeEnd: '', sharedStartTime: '', sharedEndTime: '',
                       dateTimeEntries: [], interpretationLocation: '',
                       interpretationCity: '', interpretationState: '',
@@ -910,35 +1097,106 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                       <label className="block text-xs font-semibold text-gray-700 mb-2">
                         Source Language *
                       </label>
-                      <select
-                        name="sourceLanguageId"
-                        value={formData.sourceLanguageId}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white text-sm"
-                      >
-                        <option value="">Select language</option>
-                        {languages.map(lang => (
-                          <option key={lang.id} value={lang.id}>{lang.name}</option>
-                        ))}
-                      </select>
+                      {formData.serviceType === 'interpretation' ? (
+                        <div className="w-full px-3 py-2.5 border border-gray-200 rounded-lg bg-gray-100 text-sm text-gray-700 cursor-not-allowed">
+                          English
+                        </div>
+                      ) : (
+                        <select
+                          name="sourceLanguageId"
+                          value={formData.sourceLanguageId}
+                          onChange={handleChange}
+                          required
+                          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white text-sm"
+                        >
+                          <option value="">Select language</option>
+                          {languages.map(lang => (
+                            <option key={lang.id} value={lang.id}>{lang.name}</option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-700 mb-2">
-                        Target Language *
+                        {formData.serviceType === 'interpretation' ? 'Requested Language *' : 'Target Language *'}
                       </label>
-                      <select
-                        name="targetLanguageId"
-                        value={formData.targetLanguageId}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white text-sm"
-                      >
-                        <option value="">Select language</option>
-                        {languages.map(lang => (
-                          <option key={lang.id} value={lang.id}>{lang.name}</option>
-                        ))}
-                      </select>
+                      {formData.serviceType === 'interpretation' ? (
+                        <div className="relative" ref={targetLangDropdownRef}>
+                          <div
+                            onClick={() => setTargetLangDropdownOpen(!targetLangDropdownOpen)}
+                            className={`w-full px-3 py-2.5 border rounded-lg transition-all bg-white text-sm cursor-pointer flex items-center justify-between ${
+                              targetLangDropdownOpen ? 'border-purple-500 ring-2 ring-purple-200' : 'border-gray-200 hover:border-purple-300'
+                            }`}
+                          >
+                            <span className={formData.targetLanguageId ? 'text-gray-900' : 'text-gray-400'}>
+                              {formData.targetLanguageId 
+                                ? languages.find(l => l.id === formData.targetLanguageId)?.name 
+                                : 'Search and select language...'}
+                            </span>
+                            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${targetLangDropdownOpen ? 'rotate-180' : ''}`} />
+                          </div>
+                          {targetLangDropdownOpen && (
+                            <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                              <div className="p-2 border-b border-gray-100">
+                                <div className="relative">
+                                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                  <input
+                                    type="text"
+                                    placeholder="Search languages..."
+                                    value={targetLangSearchTerm}
+                                    onChange={(e) => setTargetLangSearchTerm(e.target.value)}
+                                    className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400"
+                                    autoFocus
+                                  />
+                                </div>
+                              </div>
+                              <div className="max-h-48 overflow-y-auto">
+                                {filteredTargetLanguages.length > 0 ? (
+                                  filteredTargetLanguages.map(lang => (
+                                    <div
+                                      key={lang.id}
+                                      onClick={() => {
+                                        setFormData(prev => ({ ...prev, targetLanguageId: lang.id }))
+                                        setTargetLangDropdownOpen(false)
+                                        setTargetLangSearchTerm('')
+                                      }}
+                                      className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
+                                        formData.targetLanguageId === lang.id
+                                          ? 'bg-purple-100 text-purple-700 font-medium'
+                                          : 'hover:bg-purple-50 text-gray-700'
+                                      }`}
+                                    >
+                                      {lang.name}
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="px-3 py-4 text-sm text-gray-500 text-center">
+                                    No languages found
+                                  </div>
+                                )}
+                              </div>
+                              {filteredTargetLanguages.length > 5 && (
+                                <div className="px-3 py-1.5 text-xs text-gray-400 text-center border-t border-gray-100 bg-gray-50">
+                                  ↓ Scroll for more languages
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <select
+                          name="targetLanguageId"
+                          value={formData.targetLanguageId}
+                          onChange={handleChange}
+                          required
+                          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white text-sm"
+                        >
+                          <option value="">Select language</option>
+                          {languages.map(lang => (
+                            <option key={lang.id} value={lang.id}>{lang.name}</option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                   </div>
 
@@ -984,12 +1242,9 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                             <Calendar className="w-3.5 h-3.5 inline mr-1.5 text-blue-600" />
                             Deadline
                           </label>
-                          <input
-                            type="date"
-                            name="deadline"
+                          <DatePicker
                             value={formData.deadline}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
+                            onChange={(value) => setFormData(prev => ({ ...prev, deadline: value }))}
                           />
                         </div>
                       </div>
@@ -1107,14 +1362,44 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                       {/* Subject Matter */}
                       <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-2">Subject Matter</label>
-                        <input
-                          type="text"
-                          name="subjectMatter"
-                          placeholder="e.g., Medical appointment, Legal deposition, Business meeting..."
-                          value={formData.subjectMatter}
-                          onChange={handleChange}
-                          className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
-                        />
+                        <div className="grid grid-cols-5 gap-2 mb-3">
+                          {[
+                            { id: 'deposition', label: 'Deposition' },
+                            { id: 'uscis', label: 'USCIS Interview' },
+                            { id: 'hearing', label: 'Hearing' },
+                            { id: 'mediation', label: 'Mediation' },
+                            { id: 'other', label: 'Other' },
+                          ].map((option) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => setFormData(prev => ({ 
+                                ...prev, 
+                                subjectMatterType: option.id as typeof prev.subjectMatterType,
+                                subjectMatter: '' 
+                              }))}
+                              className={`px-3 py-2 rounded-lg border-2 text-xs font-medium transition-all ${
+                                formData.subjectMatterType === option.id
+                                  ? 'border-emerald-600 bg-emerald-500 text-white shadow-md'
+                                  : 'border-teal-200 bg-teal-50 text-teal-600 hover:border-teal-400 hover:bg-teal-100'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                        {formData.subjectMatterType && (
+                          <textarea
+                            name="subjectMatter"
+                            placeholder={formData.subjectMatterType === 'other' 
+                              ? 'Enter the subject matter of this request in detail.' 
+                              : `Enter the details of the ${formData.subjectMatterType === 'uscis' ? 'USCIS Interview' : formData.subjectMatterType.charAt(0).toUpperCase() + formData.subjectMatterType.slice(1)}...`}
+                            value={formData.subjectMatter}
+                            onChange={handleChange}
+                            rows={2}
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm resize-none"
+                          />
+                        )}
                       </div>
 
                       {/* Date Selection Mode */}
@@ -1177,11 +1462,9 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
-                              <input
-                                type="date"
+                              <DatePicker
                                 value={formData.dateRangeStart}
-                                onChange={(e) => {
-                                  const startDate = e.target.value
+                                onChange={(startDate) => {
                                   setFormData(prev => {
                                     // Generate date entries for range if timeMode is different
                                     if (prev.timeMode === 'different' && startDate && prev.dateRangeEnd) {
@@ -1191,16 +1474,13 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                                     return { ...prev, dateRangeStart: startDate }
                                   })
                                 }}
-                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                               />
                             </div>
                             <div>
                               <label className="block text-xs font-medium text-gray-600 mb-1">End Date</label>
-                              <input
-                                type="date"
+                              <DatePicker
                                 value={formData.dateRangeEnd}
-                                onChange={(e) => {
-                                  const endDate = e.target.value
+                                onChange={(endDate) => {
                                   setFormData(prev => {
                                     // Generate date entries for range if timeMode is different
                                     if (prev.timeMode === 'different' && prev.dateRangeStart && endDate) {
@@ -1210,42 +1490,43 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                                     return { ...prev, dateRangeEnd: endDate }
                                   })
                                 }}
-                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                               />
                             </div>
                           </div>
 
                           {/* Time Mode Toggle for Range */}
-                          {formData.dateRangeStart && formData.dateRangeEnd && (
-                            <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
-                              <span className="text-xs text-gray-600">Time:</span>
-                              <button
-                                type="button"
-                                onClick={() => setFormData(prev => ({ ...prev, timeMode: 'same', dateTimeEntries: [] }))}
-                                className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                                  formData.timeMode === 'same' 
-                                    ? 'bg-purple-600 text-white' 
-                                    : 'bg-white text-gray-600 hover:bg-gray-100'
-                                }`}
-                              >
-                                Same for all days
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
+                          <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
+                            <span className="text-xs text-gray-600">Time:</span>
+                            <button
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, timeMode: 'same', dateTimeEntries: [] }))}
+                              className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                                formData.timeMode === 'same' 
+                                  ? 'bg-purple-600 text-white' 
+                                  : 'bg-white text-gray-600 hover:bg-gray-100'
+                              }`}
+                            >
+                              Same for all days
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (formData.dateRangeStart && formData.dateRangeEnd) {
                                   const entries = generateDateEntriesForRange(formData.dateRangeStart, formData.dateRangeEnd)
                                   setFormData(prev => ({ ...prev, timeMode: 'different', dateTimeEntries: entries }))
-                                }}
-                                className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                                  formData.timeMode === 'different' 
-                                    ? 'bg-purple-600 text-white' 
-                                    : 'bg-white text-gray-600 hover:bg-gray-100'
-                                }`}
-                              >
-                                Different per day
-                              </button>
-                            </div>
-                          )}
+                                } else {
+                                  setFormData(prev => ({ ...prev, timeMode: 'different' }))
+                                }
+                              }}
+                              className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                                formData.timeMode === 'different' 
+                                  ? 'bg-purple-600 text-white' 
+                                  : 'bg-white text-gray-600 hover:bg-gray-100'
+                              }`}
+                            >
+                              Different per day
+                            </button>
+                          </div>
 
                           {/* Same time for all days */}
                           {formData.timeMode === 'same' && (
@@ -1279,11 +1560,10 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                                     <label className="block text-[10px] font-medium text-gray-500 mb-1">
                                       {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                                     </label>
-                                    <input
-                                      type="date"
+                                    <DatePicker
                                       value={entry.date}
+                                      onChange={() => {}}
                                       disabled
-                                      className="w-full px-2 py-1.5 border border-gray-100 rounded text-sm bg-gray-50 text-gray-500"
                                     />
                                   </div>
                                   <div>
@@ -1373,22 +1653,20 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                           {/* Date Entries */}
                           <div className="space-y-2">
                             {formData.dateTimeEntries.map((entry, index) => (
-                              <div key={entry.id} className="flex items-start gap-2 p-2.5 bg-gray-50 rounded-lg">
-                                <div className="flex-1 grid grid-cols-3 gap-2">
+                              <div key={entry.id} className="p-2.5 bg-gray-50 rounded-lg">
+                                <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
                                   <div>
                                     <label className="block text-[10px] font-medium text-gray-500 mb-1">Date {formData.dateSelectionMode === 'multiple' ? index + 1 : ''}</label>
-                                    <input
-                                      type="date"
+                                    <DatePicker
                                       value={entry.date}
-                                      onChange={(e) => {
+                                      onChange={(value) => {
                                         const newEntries = [...formData.dateTimeEntries]
-                                        newEntries[index] = { ...entry, date: e.target.value }
+                                        newEntries[index] = { ...entry, date: value }
                                         setFormData(prev => ({ ...prev, dateTimeEntries: newEntries }))
                                       }}
-                                      className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm"
                                     />
                                   </div>
-                                  {(formData.dateSelectionMode === 'single' || formData.timeMode === 'different') && (
+                                  {(formData.dateSelectionMode === 'single' || formData.timeMode === 'different' || (formData.dateSelectionMode === 'multiple' && formData.dateTimeEntries.length === 1)) && (
                                     <>
                                       <div>
                                         <label className="block text-[10px] font-medium text-gray-500 mb-1">Start Time</label>
@@ -1414,24 +1692,26 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                                       </div>
                                     </>
                                   )}
-                                  {formData.dateSelectionMode === 'multiple' && formData.timeMode === 'same' && (
-                                    <div className="col-span-2 flex items-end pb-1">
+                                  {formData.dateSelectionMode === 'multiple' && formData.timeMode === 'same' && formData.dateTimeEntries.length > 1 && (
+                                    <div className="col-span-2 flex items-center pb-1.5">
                                       <span className="text-xs text-gray-400">Using shared time</span>
                                     </div>
                                   )}
+                                  {formData.dateSelectionMode === 'multiple' && formData.dateTimeEntries.length > 1 ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newEntries = formData.dateTimeEntries.filter(e => e.id !== entry.id)
+                                        setFormData(prev => ({ ...prev, dateTimeEntries: newEntries }))
+                                      }}
+                                      className="p-1.5 text-gray-400 hover:text-red-500 transition-colors mb-0.5"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  ) : (
+                                    <div className="w-7" /> 
+                                  )}
                                 </div>
-                                {formData.dateSelectionMode === 'multiple' && formData.dateTimeEntries.length > 1 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newEntries = formData.dateTimeEntries.filter(e => e.id !== entry.id)
-                                      setFormData(prev => ({ ...prev, dateTimeEntries: newEntries }))
-                                    }}
-                                    className="mt-5 p-1 text-gray-400 hover:text-red-500 transition-colors"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                )}
                               </div>
                             ))}
                           </div>
