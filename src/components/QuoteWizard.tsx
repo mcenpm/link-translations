@@ -64,6 +64,16 @@ const US_STATES = [
   { code: 'DC', name: 'Washington D.C.' },
 ]
 
+// US Time Zones
+const US_TIMEZONES = [
+  { code: 'ET', name: 'Eastern Time (ET)', offset: 'UTC-5/UTC-4' },
+  { code: 'CT', name: 'Central Time (CT)', offset: 'UTC-6/UTC-5' },
+  { code: 'MT', name: 'Mountain Time (MT)', offset: 'UTC-7/UTC-6' },
+  { code: 'PT', name: 'Pacific Time (PT)', offset: 'UTC-8/UTC-7' },
+  { code: 'AKT', name: 'Alaska Time (AKT)', offset: 'UTC-9/UTC-8' },
+  { code: 'HT', name: 'Hawaii Time (HT)', offset: 'UTC-10' },
+]
+
 interface Language {
   id: string
   name: string
@@ -317,10 +327,10 @@ function TimePicker({ value, onChange }: TimePickerProps) {
   const handleSelectFromPicker = (type: 'hour' | 'minute' | 'period', val: string) => {
     if (type === 'hour') {
       setHourInput(val)
-      updateValue(val, minuteInput || '00', periodInput)
+      updateValue(val, minuteInput || '00', periodInput || 'AM')
     } else if (type === 'minute') {
       setMinuteInput(val)
-      updateValue(hourInput || '12', val, periodInput)
+      updateValue(hourInput || '12', val, periodInput || 'AM')
     } else {
       const p = val as 'AM' | 'PM'
       setPeriodInput(p)
@@ -336,7 +346,7 @@ function TimePicker({ value, onChange }: TimePickerProps) {
         ? minuteInput && !minuteInput.includes('_') && minuteInput !== ''
         : periodInput !== ''
     
-    const baseClasses = 'w-8 text-center outline-none cursor-pointer transition-all rounded px-1 py-0.5'
+    const baseClasses = 'w-7 text-center outline-none cursor-pointer transition-all rounded px-0.5 py-0.5'
     
     if (isFocused) {
       return {
@@ -367,12 +377,12 @@ function TimePicker({ value, onChange }: TimePickerProps) {
   }
   
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative min-w-0" ref={containerRef}>
       {/* Input Field */}
       <div className={`flex items-center border rounded-lg bg-white transition-all ${
         focusedSection ? 'border-purple-500 ring-2 ring-purple-200 shadow-sm' : 'border-gray-200 hover:border-purple-300'
       }`}>
-        <div className="flex items-center px-2 py-1.5 flex-1 text-sm font-mono">
+        <div className="flex items-center px-2 py-1.5 flex-1 text-sm font-mono min-w-0">
           {/* Hour */}
           <input
             ref={hourRef}
@@ -430,7 +440,7 @@ function TimePicker({ value, onChange }: TimePickerProps) {
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="p-2 hover:bg-purple-50 rounded-r-lg transition-colors border-l border-gray-200"
+          className="px-2 py-2 hover:bg-purple-50 rounded-r-lg transition-colors border-l border-gray-200 flex-shrink-0"
         >
           <Clock className="w-4 h-4 text-purple-500" />
         </button>
@@ -486,26 +496,19 @@ function TimePicker({ value, onChange }: TimePickerProps) {
             
             {/* AM/PM Column */}
             <div className="w-14 flex flex-col">
-              <div
-                onClick={() => handleSelectFromPicker('period', 'AM')}
-                className={`flex-1 flex items-center justify-center cursor-pointer transition-colors text-sm font-medium ${
-                  periodInput === 'AM' 
-                    ? 'bg-purple-600 text-white' 
-                    : 'hover:bg-purple-50 text-gray-700'
-                }`}
-              >
-                AM
-              </div>
-              <div
-                onClick={() => handleSelectFromPicker('period', 'PM')}
-                className={`flex-1 flex items-center justify-center cursor-pointer transition-colors text-sm font-medium ${
-                  periodInput === 'PM' 
-                    ? 'bg-purple-600 text-white' 
-                    : 'hover:bg-purple-50 text-gray-700'
-                }`}
-              >
-                PM
-              </div>
+              {(['AM', 'PM'] as const).map(p => (
+                <div
+                  key={p}
+                  onClick={() => handleSelectFromPicker('period', p)}
+                  className={`flex-1 flex items-center justify-center cursor-pointer transition-colors text-sm font-medium ${
+                    periodInput === p 
+                      ? 'bg-purple-600 text-white' 
+                      : 'hover:bg-purple-50 text-gray-700'
+                  }`}
+                >
+                  {p}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -615,7 +618,7 @@ function DatePicker({ value, onChange, disabled = false, minDate }: DatePickerPr
   }
   
   return (
-    <div className="relative">
+    <div className="relative min-w-0">
       <div className={`flex border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-transparent ${error ? 'border-red-400' : 'border-gray-200'}`}>
         <input
           type="text"
@@ -623,7 +626,7 @@ function DatePicker({ value, onChange, disabled = false, minDate }: DatePickerPr
           onChange={handleInputChange}
           placeholder="mm/dd/yyyy"
           disabled={disabled}
-          className="flex-1 px-3 py-2 text-sm focus:outline-none bg-transparent"
+          className="flex-1 min-w-0 px-3 py-2 text-sm focus:outline-none bg-transparent"
         />
         <input
           ref={hiddenInputRef}
@@ -639,7 +642,7 @@ function DatePicker({ value, onChange, disabled = false, minDate }: DatePickerPr
           type="button"
           onClick={openDatePicker}
           disabled={disabled}
-          className="p-2 hover:bg-purple-50 transition-colors border-l border-gray-200"
+          className="px-2 py-2 hover:bg-purple-50 transition-colors border-l border-gray-200 flex-shrink-0"
         >
           <Calendar className="w-4 h-4 text-purple-500" />
         </button>
@@ -701,6 +704,10 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [quoteNumber, setQuoteNumber] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const [showConsecutiveWarning, setShowConsecutiveWarning] = useState(false)
+  
+  // Subject matters that require consecutive mode only
+  const consecutiveOnlySubjects = ['deposition', 'uscis', 'hearing', 'mediation']
   
   // State dropdown states
   const [stateDropdownOpen, setStateDropdownOpen] = useState(false)
@@ -738,6 +745,7 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
     interpretationLocation: '',
     interpretationCity: '',
     interpretationState: '',
+    timeZone: '', // For video/phone interpretation
     
     // Step 3: Contact Info
     firstName: '',
@@ -828,7 +836,34 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
       case 1:
         return !!formData.serviceType
       case 2:
-        return !!formData.sourceLanguageId && !!formData.targetLanguageId
+        if (!formData.sourceLanguageId || !formData.targetLanguageId) return false
+        
+        // Interpretation-specific validations
+        if (formData.serviceType === 'interpretation') {
+          // Subject matter is required
+          if (!formData.subjectMatterType || !formData.subjectMatter.trim()) return false
+          
+          // Date selection is required
+          if (!formData.dateSelectionMode) return false
+          
+          // Check if at least one date is selected
+          if (formData.dateSelectionMode === 'range') {
+            if (!formData.dateRangeStart || !formData.dateRangeEnd) return false
+          } else {
+            // Single or Multiple mode
+            if (formData.dateTimeEntries.length === 0 || !formData.dateTimeEntries[0].date) return false
+          }
+          
+          // In-person requires location
+          if (formData.interpretationSetting === 'in-person') {
+            if (!formData.interpretationLocation.trim() || !formData.interpretationCity.trim() || !formData.interpretationState) return false
+          }
+          
+          // Video/Phone requires time zone
+          if ((formData.interpretationSetting === 'video-remote' || formData.interpretationSetting === 'phone') && !formData.timeZone) return false
+        }
+        
+        return true
       case 3:
         return !!formData.firstName && !!formData.lastName && !!formData.email && !!formData.phone
       case 4:
@@ -924,7 +959,7 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                       subjectMatterType: '', subjectMatter: '', dateSelectionMode: '', timeMode: 'same',
                       dateRangeStart: '', dateRangeEnd: '', sharedStartTime: '', sharedEndTime: '',
                       dateTimeEntries: [], interpretationLocation: '',
-                      interpretationCity: '', interpretationState: '',
+                      interpretationCity: '', interpretationState: '', timeZone: '',
                       firstName: '', lastName: '', email: '', phone: '', company: '',
                       description: '', howDidYouHear: '',
                     })
@@ -1294,7 +1329,11 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, interpretationSetting: 'phone' }))}
+                            onClick={() => setFormData(prev => ({ 
+                              ...prev, 
+                              interpretationSetting: 'phone',
+                              interpretationMode: 'consecutive' // Phone requires consecutive mode
+                            }))}
                             className={`relative flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
                               formData.interpretationSetting === 'phone'
                                 ? 'border-purple-500 bg-purple-50'
@@ -1315,6 +1354,13 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                       {/* Mode of Interpretation - Quick Icons */}
                       <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-2">Mode of Interpretation *</label>
+                        {(consecutiveOnlySubjects.includes(formData.subjectMatterType) || formData.interpretationSetting === 'phone') && (
+                          <p className="text-[10px] text-amber-600 mb-2">
+                            {formData.interpretationSetting === 'phone' 
+                              ? 'Only consecutive interpretation is available for phone interpretation.'
+                              : 'Only consecutive interpretation is available for this service type.'}
+                          </p>
+                        )}
                         <div className="grid grid-cols-2 gap-2">
                           <button
                             type="button"
@@ -1338,11 +1384,14 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, interpretationMode: 'simultaneous' }))}
+                            disabled={consecutiveOnlySubjects.includes(formData.subjectMatterType) || formData.interpretationSetting === 'phone'}
+                            onClick={() => !(consecutiveOnlySubjects.includes(formData.subjectMatterType) || formData.interpretationSetting === 'phone') && setFormData(prev => ({ ...prev, interpretationMode: 'simultaneous' }))}
                             className={`relative flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                              formData.interpretationMode === 'simultaneous'
-                                ? 'border-purple-500 bg-purple-50'
-                                : 'border-gray-200 bg-white hover:border-purple-300 hover:bg-gray-50'
+                              (consecutiveOnlySubjects.includes(formData.subjectMatterType) || formData.interpretationSetting === 'phone')
+                                ? 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
+                                : formData.interpretationMode === 'simultaneous'
+                                  ? 'border-purple-500 bg-purple-50'
+                                  : 'border-gray-200 bg-white hover:border-purple-300 hover:bg-gray-50'
                             }`}
                           >
                             {formData.interpretationMode === 'simultaneous' && (
@@ -1361,7 +1410,7 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
 
                       {/* Subject Matter */}
                       <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-2">Subject Matter</label>
+                        <label className="block text-xs font-semibold text-gray-700 mb-2">Subject Matter *</label>
                         <div className="grid grid-cols-5 gap-2 mb-3">
                           {[
                             { id: 'deposition', label: 'Deposition' },
@@ -1373,11 +1422,24 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                             <button
                               key={option.id}
                               type="button"
-                              onClick={() => setFormData(prev => ({ 
-                                ...prev, 
-                                subjectMatterType: option.id as typeof prev.subjectMatterType,
-                                subjectMatter: '' 
-                              }))}
+                              onClick={() => {
+                                const isConsecutiveOnly = consecutiveOnlySubjects.includes(option.id)
+                                const wasSimultaneous = formData.interpretationMode === 'simultaneous'
+                                
+                                setFormData(prev => ({ 
+                                  ...prev, 
+                                  subjectMatterType: option.id as typeof prev.subjectMatterType,
+                                  subjectMatter: '',
+                                  // Auto-set consecutive for these subject matters
+                                  interpretationMode: isConsecutiveOnly ? 'consecutive' : prev.interpretationMode
+                                }))
+                                
+                                // Show warning if switching from simultaneous
+                                if (isConsecutiveOnly && wasSimultaneous) {
+                                  setShowConsecutiveWarning(true)
+                                  setTimeout(() => setShowConsecutiveWarning(false), 5000)
+                                }
+                              }}
                               className={`px-3 py-2 rounded-lg border-2 text-xs font-medium transition-all ${
                                 formData.subjectMatterType === option.id
                                   ? 'border-emerald-600 bg-emerald-500 text-white shadow-md'
@@ -1388,6 +1450,15 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                             </button>
                           ))}
                         </div>
+                        
+                        {/* Consecutive-only warning */}
+                        {showConsecutiveWarning && (
+                          <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <p className="text-xs text-amber-800 font-medium">
+                              ⚠️ We provide interpretation ONLY IN CONSECUTIVE MODE for this subject matter.
+                            </p>
+                          </div>
+                        )}
                         {formData.subjectMatterType && (
                           <textarea
                             name="subjectMatter"
@@ -1538,7 +1609,14 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                                 </label>
                                 <TimePicker
                                   value={formData.sharedStartTime}
-                                  onChange={(value) => setFormData(prev => ({ ...prev, sharedStartTime: value }))}
+                                  onChange={(value) => {
+                                    // If start time is after or equal to end time, clear end time
+                                    if (formData.sharedEndTime && value >= formData.sharedEndTime) {
+                                      setFormData(prev => ({ ...prev, sharedStartTime: value, sharedEndTime: '' }))
+                                    } else {
+                                      setFormData(prev => ({ ...prev, sharedStartTime: value }))
+                                    }
+                                  }}
                                 />
                               </div>
                               <div>
@@ -1572,7 +1650,12 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                                       value={entry.startTime}
                                       onChange={(value) => {
                                         const newEntries = [...formData.dateTimeEntries]
-                                        newEntries[index] = { ...entry, startTime: value }
+                                        // If start time is after or equal to end time, clear end time
+                                        if (entry.endTime && value >= entry.endTime) {
+                                          newEntries[index] = { ...entry, startTime: value, endTime: '' }
+                                        } else {
+                                          newEntries[index] = { ...entry, startTime: value }
+                                        }
                                         setFormData(prev => ({ ...prev, dateTimeEntries: newEntries }))
                                       }}
                                     />
@@ -1637,7 +1720,14 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                                 </label>
                                 <TimePicker
                                   value={formData.sharedStartTime}
-                                  onChange={(value) => setFormData(prev => ({ ...prev, sharedStartTime: value }))}
+                                  onChange={(value) => {
+                                    // If start time is after or equal to end time, clear end time
+                                    if (formData.sharedEndTime && value >= formData.sharedEndTime) {
+                                      setFormData(prev => ({ ...prev, sharedStartTime: value, sharedEndTime: '' }))
+                                    } else {
+                                      setFormData(prev => ({ ...prev, sharedStartTime: value }))
+                                    }
+                                  }}
                                 />
                               </div>
                               <div>
@@ -1654,8 +1744,8 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                           <div className="space-y-2">
                             {formData.dateTimeEntries.map((entry, index) => (
                               <div key={entry.id} className="p-2.5 bg-gray-50 rounded-lg">
-                                <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
-                                  <div>
+                                <div className="flex gap-2 items-end">
+                                  <div className="flex-1 min-w-0">
                                     <label className="block text-[10px] font-medium text-gray-500 mb-1">Date {formData.dateSelectionMode === 'multiple' ? index + 1 : ''}</label>
                                     <DatePicker
                                       value={entry.date}
@@ -1668,18 +1758,23 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                                   </div>
                                   {(formData.dateSelectionMode === 'single' || formData.timeMode === 'different' || (formData.dateSelectionMode === 'multiple' && formData.dateTimeEntries.length === 1)) && (
                                     <>
-                                      <div>
+                                      <div className="flex-1 min-w-0">
                                         <label className="block text-[10px] font-medium text-gray-500 mb-1">Start Time</label>
                                         <TimePicker
                                           value={entry.startTime}
                                           onChange={(value) => {
                                             const newEntries = [...formData.dateTimeEntries]
-                                            newEntries[index] = { ...entry, startTime: value }
+                                            // If start time is after or equal to end time, clear end time
+                                            if (entry.endTime && value >= entry.endTime) {
+                                              newEntries[index] = { ...entry, startTime: value, endTime: '' }
+                                            } else {
+                                              newEntries[index] = { ...entry, startTime: value }
+                                            }
                                             setFormData(prev => ({ ...prev, dateTimeEntries: newEntries }))
                                           }}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="flex-1 min-w-0">
                                         <label className="block text-[10px] font-medium text-gray-500 mb-1">End Time</label>
                                         <TimePicker
                                           value={entry.endTime}
@@ -1693,7 +1788,7 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                                     </>
                                   )}
                                   {formData.dateSelectionMode === 'multiple' && formData.timeMode === 'same' && formData.dateTimeEntries.length > 1 && (
-                                    <div className="col-span-2 flex items-center pb-1.5">
+                                    <div className="flex-[2] flex items-center pb-1.5">
                                       <span className="text-xs text-gray-400">Using shared time</span>
                                     </div>
                                   )}
@@ -1704,13 +1799,11 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                                         const newEntries = formData.dateTimeEntries.filter(e => e.id !== entry.id)
                                         setFormData(prev => ({ ...prev, dateTimeEntries: newEntries }))
                                       }}
-                                      className="p-1.5 text-gray-400 hover:text-red-500 transition-colors mb-0.5"
+                                      className="p-1.5 text-gray-400 hover:text-red-500 transition-colors mb-0.5 flex-shrink-0"
                                     >
                                       <X className="w-4 h-4" />
                                     </button>
-                                  ) : (
-                                    <div className="w-7" /> 
-                                  )}
+                                  ) : null}
                                 </div>
                               </div>
                             ))}
@@ -1739,79 +1832,102 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                       )}
 
                       {/* Location - only for In-Person */}
-                      <div className={formData.interpretationSetting !== 'in-person' ? 'opacity-50' : ''}>
-                        <label className="block text-xs font-semibold text-gray-700 mb-2">
-                          <MapPin className="w-3.5 h-3.5 inline mr-1.5 text-purple-600" />
-                          Location {formData.interpretationSetting !== 'in-person' && <span className="text-gray-400 font-normal">(In-Person only)</span>}
-                        </label>
-                        <div className="grid grid-cols-3 gap-2">
-                          <input
-                            type="text"
-                            name="interpretationLocation"
-                            placeholder="Address or Virtual"
-                            value={formData.interpretationLocation}
-                            onChange={handleChange}
-                            disabled={formData.interpretationSetting !== 'in-person'}
-                            className={`w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm ${formData.interpretationSetting !== 'in-person' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                          />
-                          <input
-                            type="text"
-                            name="interpretationCity"
-                            placeholder="City"
-                            value={formData.interpretationCity}
-                            onChange={handleChange}
-                            disabled={formData.interpretationSetting !== 'in-person'}
-                            className={`w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm ${formData.interpretationSetting !== 'in-person' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                          />
-                          {/* State Searchable Dropdown */}
-                          <div className="relative" ref={stateDropdownRef}>
+                      {formData.interpretationSetting === 'in-person' && (
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-2">
+                            <MapPin className="w-3.5 h-3.5 inline mr-1.5 text-purple-600" />
+                            Location
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
                             <input
                               type="text"
-                              placeholder="State"
-                              autoComplete="new-password"
-                              data-lpignore="true"
-                              data-form-type="other"
-                              disabled={formData.interpretationSetting !== 'in-person'}
-                              value={stateDropdownOpen ? stateSearchTerm : formData.interpretationState}
-                              onChange={(e) => {
-                                if (formData.interpretationSetting !== 'in-person') return
-                                setStateSearchTerm(e.target.value)
-                                if (!stateDropdownOpen) setStateDropdownOpen(true)
-                              }}
-                              onFocus={() => {
-                                if (formData.interpretationSetting !== 'in-person') return
-                                setStateDropdownOpen(true)
-                                setStateSearchTerm('')
-                              }}
-                              className={`w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm ${formData.interpretationSetting !== 'in-person' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                              name="interpretationLocation"
+                              placeholder="Address"
+                              value={formData.interpretationLocation}
+                              onChange={handleChange}
+                              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
                             />
-                            {stateDropdownOpen && formData.interpretationSetting === 'in-person' && (
-                              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                {filteredStates.length > 0 ? (
-                                  filteredStates.map((state) => (
-                                    <button
-                                      key={state.code}
-                                      type="button"
-                                      onClick={() => {
-                                        setFormData(prev => ({ ...prev, interpretationState: state.name }))
-                                        setStateDropdownOpen(false)
-                                        setStateSearchTerm('')
-                                      }}
-                                      className={`w-full px-3 py-2 text-left text-sm hover:bg-purple-50 transition-colors ${
-                                        formData.interpretationState === state.name ? 'bg-purple-100 text-purple-700 font-medium' : 'text-gray-700'
-                                      }`}
-                                    >
-                                      <span className="font-medium">{state.code}</span> - {state.name}
-                                    </button>
-                                  ))
-                                ) : (
-                                  <div className="px-3 py-2 text-sm text-gray-500">No states found</div>
-                                )}
-                              </div>
-                            )}
+                            <input
+                              type="text"
+                              name="interpretationCity"
+                              placeholder="City"
+                              value={formData.interpretationCity}
+                              onChange={handleChange}
+                              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                            />
+                            {/* State Searchable Dropdown */}
+                            <div className="relative" ref={stateDropdownRef}>
+                              <input
+                                type="text"
+                                placeholder="State"
+                                autoComplete="new-password"
+                                data-lpignore="true"
+                                data-form-type="other"
+                                value={stateDropdownOpen ? stateSearchTerm : formData.interpretationState}
+                                onChange={(e) => {
+                                  setStateSearchTerm(e.target.value)
+                                  if (!stateDropdownOpen) setStateDropdownOpen(true)
+                                }}
+                                onFocus={() => {
+                                  setStateDropdownOpen(true)
+                                  setStateSearchTerm('')
+                                }}
+                                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                              />
+                              {stateDropdownOpen && (
+                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                  {filteredStates.length > 0 ? (
+                                    filteredStates.map((state) => (
+                                      <button
+                                        key={state.code}
+                                        type="button"
+                                        onClick={() => {
+                                          setFormData(prev => ({ ...prev, interpretationState: state.name }))
+                                          setStateDropdownOpen(false)
+                                          setStateSearchTerm('')
+                                        }}
+                                        className={`w-full px-3 py-2 text-left text-sm hover:bg-purple-50 transition-colors ${
+                                          formData.interpretationState === state.name ? 'bg-purple-100 text-purple-700 font-medium' : 'text-gray-700'
+                                        }`}
+                                      >
+                                        <span className="font-medium">{state.code}</span> - {state.name}
+                                      </button>
+                                    ))
+                                  ) : (
+                                    <div className="px-3 py-2 text-sm text-gray-500">No states found</div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
+
+                      {/* Time Zone - Only for Video or Phone */}
+                      {(formData.interpretationSetting === 'video-remote' || formData.interpretationSetting === 'phone') && (
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-2">
+                            <Clock className="w-3.5 h-3.5 inline mr-1.5 text-purple-600" />
+                            Time Zone *
+                          </label>
+                          <div className="flex flex-wrap gap-2 justify-center">
+                            {US_TIMEZONES.map((tz) => (
+                              <button
+                                key={tz.code}
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, timeZone: tz.code }))}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                                  formData.timeZone === tz.code
+                                    ? 'bg-purple-600 text-white shadow-md'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-purple-100 hover:text-purple-700'
+                                }`}
+                              >
+                                {tz.name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
