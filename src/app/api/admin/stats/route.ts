@@ -5,14 +5,16 @@ export async function GET() {
   try {
     // Get counts
     const [
-      totalCustomers,
+      totalCorporates,
+      totalContacts,
       totalLinguists,
       pendingQuotes,
       totalQuotes,
       recentQuotes,
       activeLinguists
     ] = await Promise.all([
-      prisma.customer.count(),
+      prisma.corporate.count(),
+      prisma.contact.count(),
       prisma.linguist.count(),
       prisma.quote.count({ where: { status: 'REVIEWING' } }),
       prisma.quote.count(),
@@ -20,7 +22,7 @@ export async function GET() {
         take: 5,
         orderBy: { createdAt: 'desc' },
         include: {
-          customer: {
+          corporate: {
             include: {
               user: { select: { firstName: true, lastName: true, email: true } }
             }
@@ -55,7 +57,8 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: {
-        totalCustomers,
+        totalCorporates,
+        totalContacts,
         totalLinguists,
         pendingQuotes,
         totalQuotes,

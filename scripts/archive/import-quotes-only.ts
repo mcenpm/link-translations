@@ -103,7 +103,7 @@ async function importQuotes() {
   let imported = 0, skipped = 0, failed = 0
   
   // Get a random customer for quotes without mapping
-  const randomCustomer = await prisma.customer.findFirst()
+  const randomCustomer = await prisma.corporate.findFirst()
   
   for (const quote of quotes) {
     try {

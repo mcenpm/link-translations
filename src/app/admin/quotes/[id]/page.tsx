@@ -11,8 +11,8 @@ interface Quote {
   quoteNumber: string
   status: string
   description: string | null
-  sourceLanguage: string
-  targetLanguage: string
+  sourceLanguage: string[]
+  targetLanguage: string[]
   wordCount: number | null
   unitOfIssue: string | null
   ratePerUnit: number
@@ -36,7 +36,7 @@ interface Quote {
   } | null
   createdAt: string
   updatedAt: string
-  customer: {
+  corporate: {
     id: string
     company: string
     user: {
@@ -206,8 +206,8 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Company</p>
-                <Link href={`/admin/customers/${quote.customer.id}`} className="text-blue-600 hover:underline font-medium">
-                  {quote.customer.company}
+                <Link href={`/admin/customers/${quote.corporate.id}`} className="text-blue-600 hover:underline font-medium">
+                  {quote.corporate.company}
                 </Link>
               </div>
               <div>
@@ -221,19 +221,19 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
                   </Link>
                 ) : (
                   <p className="text-gray-900 font-medium">
-                    {quote.billingContactName || `${quote.customer.user.firstName || ''} ${quote.customer.user.lastName || ''}`.trim() || '-'}
+                    {quote.billingContactName || `${quote.corporate.user.firstName || ''} ${quote.corporate.user.lastName || ''}`.trim() || '-'}
                   </p>
                 )}
               </div>
               <div>
                 <p className="text-sm text-gray-500">Email</p>
-                <a href={`mailto:${quote.billingContact?.email || quote.customer.user.email}`} className="text-blue-600 hover:underline">
-                  {quote.billingContact?.email || quote.customer.user.email}
+                <a href={`mailto:${quote.billingContact?.email || quote.corporate.user.email}`} className="text-blue-600 hover:underline">
+                  {quote.billingContact?.email || quote.corporate.user.email}
                 </a>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Phone</p>
-                <p className="text-gray-900">{quote.billingContact?.phone || quote.customer.user.phone || '-'}</p>
+                <p className="text-gray-900">{quote.billingContact?.phone || quote.corporate.user.phone || '-'}</p>
               </div>
             </div>
           </div>
@@ -246,11 +246,27 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Source Language</p>
-                <p className="text-gray-900 font-medium">{quote.sourceLanguage}</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {quote.sourceLanguage && quote.sourceLanguage.length > 0 ? (
+                    quote.sourceLanguage.map((lang, i) => (
+                      <span key={i} className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">{lang}</span>
+                    ))
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </div>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Target Language</p>
-                <p className="text-gray-900 font-medium">{quote.targetLanguage}</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {quote.targetLanguage && quote.targetLanguage.length > 0 ? (
+                    quote.targetLanguage.map((lang, i) => (
+                      <span key={i} className="px-2 py-1 bg-green-100 text-green-800 text-sm rounded-full">{lang}</span>
+                    ))
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </div>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Word Count</p>

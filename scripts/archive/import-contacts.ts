@@ -93,7 +93,7 @@ async function importContacts() {
         continue
       }
       
-      await prisma.customerContact.create({
+      await prisma.contact.create({
         data: {
           customerId,
           firstName,

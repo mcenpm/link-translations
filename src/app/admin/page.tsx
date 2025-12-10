@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { Users, Languages, FileText, DollarSign, Clock, CheckCircle, Loader2 } from 'lucide-react'
 
 interface Stats {
-  totalCustomers: number
+  totalCorporates: number
+  totalContacts: number
   totalLinguists: number
   pendingQuotes: number
   totalQuotes: number
@@ -15,7 +16,7 @@ interface Stats {
     quoteNumber: string
     status: string
     createdAt: string
-    customer: {
+    corporate: {
       company: string
       user: { firstName: string | null; lastName: string | null; email: string }
     }
@@ -90,15 +91,25 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
               <Users className="w-6 h-6 text-blue-600" />
             </div>
           </div>
-          <h3 className="text-gray-500 text-sm font-medium">Total Customers</h3>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalCustomers?.toLocaleString() || 0}</p>
+          <h3 className="text-gray-500 text-sm font-medium">Total Corporates</h3>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalCorporates?.toLocaleString() || 0}</p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-cyan-100 rounded-xl flex items-center justify-center">
+              <Users className="w-6 h-6 text-cyan-600" />
+            </div>
+          </div>
+          <h3 className="text-gray-500 text-sm font-medium">Total Contacts</h3>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalContacts?.toLocaleString() || 0}</p>
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -156,7 +167,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">
-                        {quote.quoteNumber} - {quote.customer?.company || quote.customer?.user?.email}
+                        {quote.quoteNumber} - {quote.corporate?.company || quote.corporate?.user?.email}
                       </p>
                       <p className="text-xs text-gray-500">
                         {quote.languagePair 

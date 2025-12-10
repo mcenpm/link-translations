@@ -165,7 +165,7 @@ async function importAccounts(): Promise<Map<string, string>> {
       }
       
       // Check if already exists
-      const existing = await prisma.customer.findFirst({
+      const existing = await prisma.corporate.findFirst({
         where: { company: companyName }
       })
       
@@ -189,7 +189,7 @@ async function importAccounts(): Promise<Map<string, string>> {
       })
       
       // Create customer (Account)
-      const customer = await prisma.customer.create({
+      const customer = await prisma.corporate.create({
         data: {
           userId: user.id,
           company: companyName,
@@ -252,7 +252,7 @@ async function importCustomerContacts(accountIdMap: Map<string, string>): Promis
       const email = cleanString(contact.email_address)
       
       // Create customer contact
-      const customerContact = await prisma.customerContact.create({
+      const customerContact = await prisma.contact.create({
         data: {
           customerId,
           firstName: firstName || 'Unknown',
@@ -495,8 +495,8 @@ async function main() {
   
   // Stats
   const stats = await prisma.$transaction([
-    prisma.customer.count(),
-    prisma.customerContact.count(),
+    prisma.corporate.count(),
+    prisma.contact.count(),
     prisma.linguist.count(),
     prisma.quote.count(),
     prisma.project.count(),

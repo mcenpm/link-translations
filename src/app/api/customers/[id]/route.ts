@@ -8,10 +8,10 @@ export async function GET(
   const { id } = await params
   
   try {
-    const contact = await prisma.customerContact.findUnique({
+    const contact = await prisma.contact.findUnique({
       where: { id },
       include: {
-        customer: {
+        corporate: {
           select: {
             id: true,
             company: true,
@@ -59,11 +59,11 @@ export async function PATCH(
   try {
     const body = await request.json()
     
-    const contact = await prisma.customerContact.update({
+    const contact = await prisma.contact.update({
       where: { id },
       data: body,
       include: {
-        customer: true,
+        corporate: true,
       },
     })
 
@@ -81,7 +81,7 @@ export async function DELETE(
   const { id } = await params
   
   try {
-    await prisma.customerContact.delete({
+    await prisma.contact.delete({
       where: { id },
     })
 

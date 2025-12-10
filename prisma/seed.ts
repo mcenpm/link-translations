@@ -6,7 +6,7 @@ const prisma = new PrismaClient()
 async function main() {
   // Clear existing data
   await prisma.quote.deleteMany()
-  await prisma.customer.deleteMany()
+  await prisma.corporate.deleteMany()
   await prisma.linguist.deleteMany()
   await prisma.user.deleteMany()
   await prisma.languagePair.deleteMany()
@@ -38,7 +38,7 @@ async function main() {
       firstName: 'John',
       lastName: 'Doe',
       phone: '555-123-4567',
-      customer: {
+      corporate: {
         create: {
           company: 'Acme Corporation',
           industry: 'Technology',

@@ -78,7 +78,7 @@ async function main() {
   
   // Get all CustomerContacts
   console.log('\n📚 Fetching CustomerContacts from database...')
-  const customerContacts = await prisma.customerContact.findMany({
+  const customerContacts = await prisma.contact.findMany({
     select: {
       id: true,
       firstName: true,
@@ -119,7 +119,7 @@ async function main() {
     
     if (crmId) {
       try {
-        await prisma.customerContact.update({
+        await prisma.contact.update({
           where: { id: contact.id },
           data: { legacyId: crmId }
         })
@@ -144,7 +144,7 @@ async function main() {
   console.log(`   Not matched: ${notFound}`)
   
   // Verify
-  const withLegacyId = await prisma.customerContact.count({
+  const withLegacyId = await prisma.contact.count({
     where: { legacyId: { not: null } }
   })
   console.log(`\n📊 Verification: ${withLegacyId} contacts now have legacyId`)

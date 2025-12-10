@@ -13,7 +13,7 @@ interface Contact {
   title: string | null
   isPrimary: boolean
   createdAt: string
-  customer: {
+  corporate: {
     id: string
     company: string
     website: string | null
@@ -161,8 +161,8 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             </div>
             <div>
               <p className="text-sm text-gray-500">Company</p>
-              <Link href={`/admin/corporates/${contact.customer.id}`} className="text-blue-600 hover:underline font-medium">
-                {contact.customer.company}
+              <Link href={`/admin/corporates/${contact.corporate.id}`} className="text-blue-600 hover:underline font-medium">
+                {contact.corporate.company}
               </Link>
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                 <Building className="w-5 h-5 text-gray-400" />
                 <div>
                   <p className="text-sm text-gray-500">Industry</p>
-                  <p className="text-gray-900">{contact.customer.industry || '-'}</p>
+                  <p className="text-gray-900">{contact.corporate.industry || '-'}</p>
                 </div>
               </div>
             </div>
@@ -233,27 +233,27 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             </h2>
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div>
-                <Link href={`/admin/corporates/${contact.customer.id}`} className="text-xl font-semibold text-blue-600 hover:underline">
-                  {contact.customer.company}
+                <Link href={`/admin/corporates/${contact.corporate.id}`} className="text-xl font-semibold text-blue-600 hover:underline">
+                  {contact.corporate.company}
                 </Link>
                 <p className="text-gray-500 mt-1">
-                  {[contact.customer.billingCity, contact.customer.billingState, contact.customer.billingCountry]
+                  {[contact.corporate.billingCity, contact.corporate.billingState, contact.corporate.billingCountry]
                     .filter(Boolean)
                     .join(', ') || 'No address'}
                 </p>
-                {contact.customer.website && (
+                {contact.corporate.website && (
                   <a 
-                    href={contact.customer.website.startsWith('http') ? contact.customer.website : `https://${contact.customer.website}`}
+                    href={contact.corporate.website.startsWith('http') ? contact.corporate.website : `https://${contact.corporate.website}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-blue-600 hover:underline"
                   >
-                    {contact.customer.website}
+                    {contact.corporate.website}
                   </a>
                 )}
               </div>
               <Link 
-                href={`/admin/corporates/${contact.customer.id}`}
+                href={`/admin/corporates/${contact.corporate.id}`}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 View Company
@@ -350,7 +350,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                 </a>
               )}
               <Link 
-                href={`/admin/corporates/${contact.customer.id}`}
+                href={`/admin/corporates/${contact.corporate.id}`}
                 className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 block text-center"
               >
                 View Company

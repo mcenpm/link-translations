@@ -11,7 +11,7 @@ export async function GET(
     const quote = await prisma.quote.findUnique({
       where: { id },
       include: {
-        customer: {
+        corporate: {
           include: {
             user: {
               select: {
@@ -61,7 +61,7 @@ export async function GET(
     // Find linked CustomerContact by billingContactCrmId
     let billingContact = null
     if (quote.billingContactCrmId) {
-      billingContact = await prisma.customerContact.findUnique({
+      billingContact = await prisma.contact.findUnique({
         where: { legacyId: quote.billingContactCrmId },
         select: {
           id: true,
@@ -69,7 +69,7 @@ export async function GET(
           lastName: true,
           email: true,
           phone: true,
-          customerId: true,
+          corporateId: true,
         }
       })
     }
@@ -104,7 +104,7 @@ export async function PATCH(
       where: { id },
       data: body,
       include: {
-        customer: {
+        corporate: {
           include: {
             user: true,
           },

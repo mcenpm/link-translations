@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      customer = await prisma.customer.create({
+      customer = await prisma.corporate.create({
         data: {
           userId: user.id,
           company: company || `${firstName} ${lastName}`,
@@ -78,12 +78,12 @@ export async function POST(request: NextRequest) {
       })
     } else {
       // Find existing customer
-      customer = await prisma.customer.findFirst({
+      customer = await prisma.corporate.findFirst({
         where: { userId: user.id }
       })
 
       if (!customer) {
-        customer = await prisma.customer.create({
+        customer = await prisma.corporate.create({
           data: {
             userId: user.id,
             company: company || `${firstName} ${lastName}`,

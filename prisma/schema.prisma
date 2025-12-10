@@ -26,25 +26,26 @@ model AdminUser {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
+  id        String     @id @default(cuid())
+  email     String     @unique
   password  String
   role      UserRole
   firstName String?
   lastName  String?
   phone     String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  customer  Customer?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  corporate Corporate?
   linguist  Linguist?
 
   @@index([email])
 }
 
-model Customer {
-  id              String            @id @default(cuid())
-  legacyId        String?           @unique // SugarCRM account id
-  userId          String            @unique
+model Corporate {
+  id              String    @id @default(cuid())
+  customerNumber  Int?      @unique // Sequential customer number
+  legacyId        String?   @unique // SugarCRM account id
+  userId          String    @unique
   company         String
   website         String?
   industry        String?
@@ -61,34 +62,37 @@ model Customer {
   taxId           String?
   paymentTerms    String?
   creditLimit     Float?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  contacts        CustomerContact[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contacts        Contact[]
   invoices        Invoice[]
   orders          Order[]
   quotes          Quote[]
   projects        Project[]
 
+  @@map("Customer")
   @@index([userId])
 }
 
-model CustomerContact {
-  id         String   @id @default(cuid())
-  legacyId   String?  @unique  // CRM contact ID
-  customerId String
-  firstName  String
-  lastName   String
-  title      String?
-  email      String?
-  phone      String?
-  isPrimary  Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  quotes     Quote[]
+model Contact {
+  id            String    @id @default(cuid())
+  contactNumber Int?      @unique // Sequential contact number
+  legacyId      String?   @unique  // CRM contact ID
+  corporateId   String    @map("customerId")
+  firstName     String
+  lastName      String
+  title         String?
+  email         String?
+  phone         String?
+  isPrimary     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  corporate     Corporate @relation(fields: [corporateId], references: [id], onDelete: Cascade)
+  quotes        Quote[]
 
-  @@index([customerId])
+  @@map("CustomerContact")
+  @@index([corporateId])
   @@index([legacyId])
 }
 
@@ -205,8 +209,8 @@ model Quote {
   languagePairId        String?
   status                QuoteStatus   @default(DRAFT)
   description           String?
-  sourceLanguage        String
-  targetLanguage        String
+  sourceLanguage        String[]      @default([])
+  targetLanguage        String[]      @default([])
   wordCount             Float?
   unitOfIssue           String?
   ratePerUnit           Float
@@ -237,8 +241,8 @@ model Quote {
   assignments           Assignment[]
   orders                Order[]
   project               Project?
-  customer              Customer      @relation(fields: [customerId], references: [id])
-  contact               CustomerContact? @relation(fields: [contactId], references: [id])
+  corporate             Corporate     @relation(fields: [customerId], references: [id])
+  contact               Contact?      @relation(fields: [contactId], references: [id])
   languagePair          LanguagePair? @relation(fields: [languagePairId], references: [id])
 
   @@index([customerId])
@@ -264,7 +268,7 @@ model Project {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   quote           Quote         @relation(fields: [quoteId], references: [id])
-  customer        Customer      @relation(fields: [customerId], references: [id])
+  corporate       Corporate     @relation(fields: [customerId], references: [id])
 
   @@index([customerId])
   @@index([status])
@@ -285,7 +289,7 @@ model Order {
   completedAt DateTime?
   assignments Assignment[]
   invoice     Invoice?
-  customer    Customer     @relation(fields: [customerId], references: [id])
+  corporate   Corporate    @relation(fields: [customerId], references: [id])
   quote       Quote        @relation(fields: [quoteId], references: [id])
 
   @@index([customerId])
@@ -333,7 +337,7 @@ model Invoice {
   notes         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  customer      Customer  @relation(fields: [customerId], references: [id])
+  corporate     Corporate @relation(fields: [customerId], references: [id])
   order         Order     @relation(fields: [orderId], references: [id])
   payments      Payment[]
 
@@ -449,6 +453,7 @@ enum LeadStatus {
 
 model Lead {
   id                     String     @id @default(cuid())
+  leadNumber             Int?       @unique // Sequential lead number
   legacyId               String?    @unique // Original SugarCRM ID
   firstName              String?
   lastName               String

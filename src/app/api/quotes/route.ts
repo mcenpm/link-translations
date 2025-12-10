@@ -80,9 +80,18 @@ export async function GET(request: Request) {
     const [quotes, total] = await Promise.all([
       prisma.quote.findMany({
         where,
-        include: {
-          customer: {
-            include: {
+        select: {
+          id: true,
+          quoteNumber: true,
+          sourceLanguage: true,
+          targetLanguage: true,
+          wordCount: true,
+          total: true,
+          status: true,
+          createdAt: true,
+          corporate: {
+            select: {
+              company: true,
               user: { select: { firstName: true, lastName: true, email: true } }
             }
           },

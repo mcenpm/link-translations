@@ -36,7 +36,7 @@ interface Project {
   internalNotes: string | null
   createdAt: string
   updatedAt: string
-  customer: {
+  corporate: {
     id: string
     company: string
   } | null
@@ -470,7 +470,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Customer Info */}
-          {project.customer && (
+          {project.corporate && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-gray-400" />
@@ -480,10 +480,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               <div className="space-y-3">
                 <div>
                   <Link 
-                    href={`/admin/corporates/${project.customer.id}`}
+                    href={`/admin/corporates/${project.corporate.id}`}
                     className="text-blue-600 hover:text-blue-800 font-medium"
                   >
-                    {project.customer.company}
+                    {project.corporate.company}
                   </Link>
                 </div>
               </div>

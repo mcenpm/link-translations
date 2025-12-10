@@ -14,15 +14,15 @@ export async function GET(request: NextRequest) {
         { firstName: { contains: search, mode: 'insensitive' as const } },
         { lastName: { contains: search, mode: 'insensitive' as const } },
         { email: { contains: search, mode: 'insensitive' as const } },
-        { customer: { company: { contains: search, mode: 'insensitive' as const } } },
+        { corporate: { company: { contains: search, mode: 'insensitive' as const } } },
       ]
     } : {}
 
     const [contacts, total] = await Promise.all([
-      prisma.customerContact.findMany({
+      prisma.contact.findMany({
         where,
         include: {
-          customer: {
+          corporate: {
             select: {
               id: true,
               company: true,
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
           createdAt: 'desc',
         },
       }),
-      prisma.customerContact.count({ where }),
+      prisma.contact.count({ where }),
     ])
 
     return NextResponse.json({

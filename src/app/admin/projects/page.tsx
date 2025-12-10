@@ -25,7 +25,7 @@ interface Project {
   dueDate: string | null
   completedDate: string | null
   createdAt: string
-  customer: {
+  corporate: {
     id: string
     company: string
   } | null
@@ -87,7 +87,7 @@ export default function ProjectsPage() {
     return (
       project.projectNumber.toLowerCase().includes(searchLower) ||
       project.name?.toLowerCase().includes(searchLower) ||
-      project.customer?.company?.toLowerCase().includes(searchLower) ||
+      project.corporate?.company?.toLowerCase().includes(searchLower) ||
       project.quote?.quoteNumber.toLowerCase().includes(searchLower)
     )
   })
@@ -276,13 +276,13 @@ export default function ProjectsPage() {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      {project.customer ? (
+                      {project.corporate ? (
                         <Link 
-                          href={`/admin/corporates/${project.customer.id}`}
+                          href={`/admin/corporates/${project.corporate.id}`}
                           className="text-gray-900 hover:text-blue-600"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {project.customer.company}
+                          {project.corporate.company}
                         </Link>
                       ) : (
                         <span className="text-gray-400">-</span>

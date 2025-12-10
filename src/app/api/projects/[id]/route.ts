@@ -11,7 +11,7 @@ export async function GET(
     const project = await prisma.project.findUnique({
       where: { id },
       include: {
-        customer: {
+        corporate: {
           select: {
             id: true,
             company: true,
@@ -84,7 +84,7 @@ export async function PATCH(
       where: { id },
       data: updateData,
       include: {
-        customer: true,
+        corporate: true,
         quote: true,
       }
     })

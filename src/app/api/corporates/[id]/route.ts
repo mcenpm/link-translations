@@ -8,7 +8,7 @@ export async function GET(
   try {
     const { id } = await params
 
-    const corporate = await prisma.customer.findUnique({
+    const corporate = await prisma.corporate.findUnique({
       where: { id },
       include: {
         contacts: {
@@ -51,7 +51,31 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(corporate)
+    // Calculate aggregate stats
+    const quoteStats = await prisma.quote.aggregate({
+      where: { customerId: id },
+      _sum: { total: true },
+      _count: true
+    })
+
+    const paidQuotes = await prisma.quote.aggregate({
+      where: { 
+        customerId: id,
+        status: 'INVOICE_PAID'
+      },
+      _sum: { total: true },
+      _count: true
+    })
+
+    return NextResponse.json({
+      ...corporate,
+      stats: {
+        totalQuotes: quoteStats._count,
+        totalValue: quoteStats._sum.total || 0,
+        paidQuotes: paidQuotes._count,
+        paidValue: paidQuotes._sum.total || 0
+      }
+    })
   } catch (error) {
     console.error('Error fetching corporate:', error)
     return NextResponse.json(

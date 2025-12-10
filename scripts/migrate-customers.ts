@@ -45,7 +45,7 @@ async function migrateCustomers() {
     for (const record of records) {
       try {
         // Check if customer already exists
-        const existingCustomer = await prisma.customer.findFirst({
+        const existingCustomer = await prisma.corporate.findFirst({
           where: { company: record.company },
         })
 
@@ -65,7 +65,7 @@ async function migrateCustomers() {
         })
 
         // Create Customer Profile
-        await prisma.customer.create({
+        await prisma.corporate.create({
           data: {
             userId: user.id,
             company: record.company,

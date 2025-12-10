@@ -6,12 +6,12 @@ import Link from 'next/link'
 interface Quote {
   id: string
   quoteNumber: string
-  customer: {
+  corporate: {
     company: string
     user: { firstName: string | null; lastName: string | null; email: string }
   }
-  sourceLanguage?: string
-  targetLanguage?: string
+  sourceLanguage?: string[]
+  targetLanguage?: string[]
   languagePair?: {
     sourceLanguage: { name: string; code: string }
     targetLanguage: { name: string; code: string }
@@ -125,9 +125,14 @@ export default function AdminQuotesPage() {
                 {quotes.map((quote) => (
                   <tr key={quote.id} className="border-b hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => window.location.href = `/admin/quotes/${quote.id}`}>
                     <td className="px-6 py-4 text-sm font-mono text-blue-600 hover:underline">{quote.quoteNumber}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{quote.customer?.company || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{quote.corporate?.company || '-'}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {quote.languagePair ? `${quote.languagePair.sourceLanguage.name} → ${quote.languagePair.targetLanguage.name}` : `${quote.sourceLanguage || '-'} → ${quote.targetLanguage || '-'}`}
+                      {quote.languagePair 
+                        ? `${quote.languagePair.sourceLanguage.name} → ${quote.languagePair.targetLanguage.name}` 
+                        : (quote.sourceLanguage?.length || quote.targetLanguage?.length)
+                          ? `${quote.sourceLanguage?.join(', ') || '-'} → ${quote.targetLanguage?.join(', ') || '-'}`
+                          : '-'
+                      }
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">{(quote.wordCount || 0).toLocaleString()}</td>
                     <td className="px-6 py-4 text-sm font-semibold text-gray-900">

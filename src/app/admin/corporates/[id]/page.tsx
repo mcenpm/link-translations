@@ -6,6 +6,7 @@ import { ArrowLeft, Building2, Globe, MapPin, Users, FileText, FolderOpen, Phone
 
 interface Contact {
   id: string
+  contactNumber: number | null
   firstName: string
   lastName: string
   title: string | null
@@ -17,8 +18,8 @@ interface Contact {
 interface Quote {
   id: string
   quoteNumber: string
-  sourceLanguage: string
-  targetLanguage: string
+  sourceLanguage: string[]
+  targetLanguage: string[]
   total: number | null
   status: string
   createdAt: string
@@ -30,6 +31,13 @@ interface Project {
   name: string
   status: string
   createdAt: string
+}
+
+interface Stats {
+  totalQuotes: number
+  totalValue: number
+  paidQuotes: number
+  paidValue: number
 }
 
 interface Corporate {
@@ -53,6 +61,7 @@ interface Corporate {
   contacts: Contact[]
   quotes: Quote[]
   projects: Project[]
+  stats?: Stats
 }
 
 const statusColors: Record<string, string> = {
@@ -160,37 +169,48 @@ export default function CorporateDetailPage({ params }: { params: Promise<{ id: 
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-6 mb-8">
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white rounded-xl p-5 border border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-              <Users className="w-6 h-6 text-purple-600" />
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <Users className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{corporate.contacts?.length || 0}</p>
-              <p className="text-sm text-gray-500">Contacts</p>
+              <p className="text-xl font-bold text-gray-900">{corporate.contacts?.length || 0}</p>
+              <p className="text-xs text-gray-500">Contacts</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
+        <div className="bg-white rounded-xl p-5 border border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <FileText className="w-6 h-6 text-blue-600" />
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <FileText className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{corporate.quotes?.length || 0}</p>
-              <p className="text-sm text-gray-500">Quotes</p>
+              <p className="text-xl font-bold text-gray-900">{corporate.stats?.totalQuotes || 0}</p>
+              <p className="text-xs text-gray-500">Total Quotes</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
+        <div className="bg-white rounded-xl p-5 border border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-              <FolderOpen className="w-6 h-6 text-green-600" />
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{corporate.projects?.length || 0}</p>
-              <p className="text-sm text-gray-500">Projects</p>
+              <p className="text-xl font-bold text-gray-900">${(corporate.stats?.totalValue || 0).toLocaleString()}</p>
+              <p className="text-xs text-gray-500">Total Value</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-5 border border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+              <FolderOpen className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-gray-900">${(corporate.stats?.paidValue || 0).toLocaleString()}</p>
+              <p className="text-xs text-gray-500">Paid ({corporate.stats?.paidQuotes || 0} quotes)</p>
             </div>
           </div>
         </div>
@@ -238,6 +258,9 @@ export default function CorporateDetailPage({ params }: { params: Promise<{ id: 
                   {corporate.contacts.map((contact) => (
                     <div key={contact.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-4">
+                        <span className="text-xs font-mono text-gray-400 w-12">
+                          #{contact.contactNumber || '-'}
+                        </span>
                         <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
                           <span className="text-purple-600 font-medium">
                             {contact.firstName?.[0]}{contact.lastName?.[0]}
@@ -298,7 +321,7 @@ export default function CorporateDetailPage({ params }: { params: Promise<{ id: 
                           </Link>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">
-                          {quote.sourceLanguage} → {quote.targetLanguage}
+                          {quote.sourceLanguage?.join(', ') || '-'} → {quote.targetLanguage?.join(', ') || '-'}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`text-xs px-2 py-1 rounded-full ${statusColors[quote.status] || 'bg-gray-100 text-gray-700'}`}>

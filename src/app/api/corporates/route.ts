@@ -19,10 +19,11 @@ export async function GET(request: Request) {
     } : {}
 
     const [corporates, total] = await Promise.all([
-      prisma.customer.findMany({
+      prisma.corporate.findMany({
         where,
         select: {
           id: true,
+          customerNumber: true,
           company: true,
           website: true,
           industry: true,
@@ -50,7 +51,7 @@ export async function GET(request: Request) {
         take: limit,
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.customer.count({ where }),
+      prisma.corporate.count({ where }),
     ])
 
     return NextResponse.json({

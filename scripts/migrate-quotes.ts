@@ -60,7 +60,7 @@ async function migrateQuotes() {
 
         // Find customer by CRM ID (need to map somehow)
         // For now, use first customer as default
-        const customer = await prisma.customer.findFirst()
+        const customer = await prisma.corporate.findFirst()
 
         if (!customer) {
           console.warn(`⚠️  No customers found. Import customers first.`)

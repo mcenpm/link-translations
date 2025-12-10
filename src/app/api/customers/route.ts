@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const skip = (page - 1) * limit
 
-    const customers = await prisma.customer.findMany({
+    const customers = await prisma.corporate.findMany({
       include: {
         user: {
           select: {
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const total = await prisma.customer.count()
+    const total = await prisma.corporate.count()
 
     return NextResponse.json({
       data: customers,
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create or update customer
-    const customer = await prisma.customer.upsert({
+    const customer = await prisma.corporate.upsert({
       where: { userId },
       update: {
         company: companyName,
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(customer, { status: 201 })
   } catch (error) {
-    console.error('Error creating customer:', error)
+    console.error('Error creating corporate:', error)
     return NextResponse.json(
       { error: 'Failed to create customer' },
       { status: 500 }

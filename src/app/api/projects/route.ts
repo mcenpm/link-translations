@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     const projects = await prisma.project.findMany({
       where,
       include: {
-        customer: {
+        corporate: {
           select: {
             id: true,
             company: true,
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
         internalNotes,
       },
       include: {
-        customer: true,
+        corporate: true,
         quote: true,
       }
     })

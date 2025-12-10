@@ -99,7 +99,7 @@ async function clearDatabase() {
   await prisma.quote.deleteMany()
   await prisma.linguistLanguage.deleteMany()
   await prisma.linguist.deleteMany()
-  await prisma.customer.deleteMany()
+  await prisma.corporate.deleteMany()
   await prisma.user.deleteMany({ where: { role: { not: 'ADMIN' } } })
   console.log('✅ Database cleared\n')
 }
@@ -149,7 +149,7 @@ async function importAccounts() {
       // Check if email already exists
       const existingUser = await prisma.user.findUnique({ where: { email } })
       if (existingUser) {
-        const existingCustomer = await prisma.customer.findUnique({ where: { userId: existingUser.id } })
+        const existingCustomer = await prisma.corporate.findUnique({ where: { userId: existingUser.id } })
         if (existingCustomer) {
           customerIdMap.set(account.id, existingCustomer.id)
           skipped++
@@ -167,7 +167,7 @@ async function importAccounts() {
         }
       })
       
-      const customer = await prisma.customer.create({
+      const customer = await prisma.corporate.create({
         data: {
           userId: user.id,
           company: account.name,
@@ -437,7 +437,7 @@ async function main() {
     console.log('=' .repeat(50))
     console.log('\n📊 Final Database Stats:')
     const [customerCount, linguistCount, quoteCount, userCount] = await Promise.all([
-      prisma.customer.count(),
+      prisma.corporate.count(),
       prisma.linguist.count(),
       prisma.quote.count(),
       prisma.user.count(),

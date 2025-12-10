@@ -6,6 +6,7 @@ import { Search, ChevronLeft, ChevronRight, Users, Phone, MapPin, ArrowUpRight, 
 
 interface Lead {
   id: string
+  leadNumber: number | null
   firstName: string | null
   lastName: string
   email: string | null
@@ -138,6 +139,7 @@ export default function LeadsPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
+                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600 w-16">#</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Name</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Contact</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Service</th>
@@ -151,13 +153,13 @@ export default function LeadsPage() {
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
                     Loading leads...
                   </td>
                 </tr>
               ) : leads.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
                     No leads found
                   </td>
                 </tr>
@@ -168,6 +170,11 @@ export default function LeadsPage() {
                     className="hover:bg-gray-50 cursor-pointer"
                     onClick={() => router.push(`/admin/leads/${lead.id}`)}
                   >
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-mono text-gray-500">
+                        {lead.leadNumber || '-'}
+                      </span>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">

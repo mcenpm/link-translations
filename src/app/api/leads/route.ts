@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
+        leadNumber: true,
         firstName: true,
         lastName: true,
         email: true,

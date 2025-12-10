@@ -43,7 +43,7 @@ async function main() {
   
   // 50 Quote ekle
   let quoteCount = 0
-  const customer = await prisma.customer.findFirst()
+  const customer = await prisma.corporate.findFirst()
   const languagePair = await prisma.languagePair.findFirst()
   if (customer && languagePair) {
     for (let i = 0; i < 50; i++) {
@@ -74,7 +74,7 @@ async function main() {
   // Stats
   const stats = {
     users: await prisma.user.count(),
-    customers: await prisma.customer.count(),
+    customers: await prisma.corporate.count(),
     linguists: await prisma.linguist.count(),
     quotes: await prisma.quote.count(),
   }

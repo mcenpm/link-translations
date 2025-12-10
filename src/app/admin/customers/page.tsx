@@ -11,7 +11,7 @@ interface Contact {
   phone: string | null
   title: string | null
   isPrimary: boolean
-  customer: {
+  corporate: {
     id: string
     company: string
   }
@@ -123,8 +123,8 @@ export default function AdminCustomersPage() {
                     <td className="px-6 py-4 text-sm text-gray-600">{contact.email || '-'}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{contact.phone || '-'}</td>
                     <td className="px-6 py-4 text-sm">
-                      <Link href={`/admin/corporates/${contact.customer.id}`} className="text-blue-600 hover:underline">
-                        {contact.customer.company}
+                      <Link href={`/admin/corporates/${contact.corporate.id}`} className="text-blue-600 hover:underline">
+                        {contact.corporate.company}
                       </Link>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">{contact.title || '-'}</td>

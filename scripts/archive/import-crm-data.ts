@@ -130,7 +130,7 @@ async function importCustomers() {
       }
       
       // Check if already exists
-      const existing = await prisma.customer.findFirst({
+      const existing = await prisma.corporate.findFirst({
         where: { company: customer.name }
       })
       
@@ -156,7 +156,7 @@ async function importCustomers() {
       // Create customer
       const stateCode = mapState(customer.billing_address_state)
       
-      const newCustomer = await prisma.customer.create({
+      const newCustomer = await prisma.corporate.create({
         data: {
           userId: user.id,
           company: customer.name,
@@ -337,7 +337,7 @@ async function main() {
     console.log('\n🎉 Import completed!')
     
     // Show stats
-    const customerCount = await prisma.customer.count()
+    const customerCount = await prisma.corporate.count()
     const quoteCount = await prisma.quote.count()
     const linguistCount = await prisma.linguist.count()
     
