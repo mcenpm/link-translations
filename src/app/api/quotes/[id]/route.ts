@@ -58,7 +58,23 @@ export async function GET(
       return NextResponse.json({ error: 'Quote not found' }, { status: 404 })
     }
 
-    return NextResponse.json(quote)
+    // Find linked CustomerContact by billingContactCrmId
+    let billingContact = null
+    if (quote.billingContactCrmId) {
+      billingContact = await prisma.customerContact.findUnique({
+        where: { legacyId: quote.billingContactCrmId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          customerId: true,
+        }
+      })
+    }
+
+    return NextResponse.json({ ...quote, billingContact })
   } catch (error) {
     console.error('Error fetching quote:', error)
     return NextResponse.json({ error: 'Failed to fetch quote' }, { status: 500 })

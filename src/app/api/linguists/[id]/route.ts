@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: Request,
@@ -8,37 +8,113 @@ export async function GET(
   const { id } = await params
   
   try {
-    const linguist = await prisma.linguist.findUnique({
-      where: { id },
-      include: {
-        user: {
-          select: {
-            email: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
+    let linguist = null
+    
+    // Try to find by linguistNumber first (if numeric)
+    const numId = parseInt(id)
+    if (!isNaN(numId)) {
+      linguist = await prisma.linguist.findUnique({
+        where: { linguistNumber: numId },
+        include: {
+          user: {
+            select: {
+              email: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+            },
           },
-        },
-        languages: {
-          include: {
-            language: true,
+          linguistLanguages: {
+            include: {
+              language: true,
+            },
           },
-        },
-        assignments: {
-          take: 20,
-          orderBy: { createdAt: 'desc' },
-          include: {
-            quote: {
-              select: {
-                quoteNumber: true,
-                sourceLanguage: true,
-                targetLanguage: true,
+          assignments: {
+            take: 20,
+            orderBy: { createdAt: 'desc' },
+            include: {
+              quote: {
+                select: {
+                  quoteNumber: true,
+                  sourceLanguage: true,
+                  targetLanguage: true,
+                },
               },
             },
           },
         },
-      },
-    })
+      })
+    }
+    
+    // If not found, try by crmId
+    if (!linguist) {
+      linguist = await prisma.linguist.findUnique({
+        where: { crmId: id },
+        include: {
+          user: {
+            select: {
+              email: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+            },
+          },
+          linguistLanguages: {
+            include: {
+              language: true,
+            },
+          },
+          assignments: {
+            take: 20,
+            orderBy: { createdAt: 'desc' },
+            include: {
+              quote: {
+                select: {
+                  quoteNumber: true,
+                  sourceLanguage: true,
+                  targetLanguage: true,
+                },
+              },
+            },
+          },
+        },
+      })
+    }
+    
+    // If still not found, try by id
+    if (!linguist) {
+      linguist = await prisma.linguist.findUnique({
+        where: { id },
+        include: {
+          user: {
+            select: {
+              email: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+            },
+          },
+          linguistLanguages: {
+            include: {
+              language: true,
+            },
+          },
+          assignments: {
+            take: 20,
+            orderBy: { createdAt: 'desc' },
+            include: {
+              quote: {
+                select: {
+                  quoteNumber: true,
+                  sourceLanguage: true,
+                  targetLanguage: true,
+                },
+              },
+            },
+          },
+        },
+      })
+    }
 
     if (!linguist) {
       return NextResponse.json({ error: 'Linguist not found' }, { status: 404 })

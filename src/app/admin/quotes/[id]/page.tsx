@@ -7,6 +7,7 @@ import { ArrowLeft, Calendar, DollarSign, FileText, User, Globe, Clock, Edit, Tr
 
 interface Quote {
   id: string
+  legacyId: string | null
   quoteNumber: string
   status: string
   description: string | null
@@ -23,6 +24,16 @@ interface Quote {
   actualDeliveryDate: string | null
   notes: string | null
   internalNotes: string | null
+  billingContactName: string | null      // Person who ordered
+  billingContactCrmId: string | null     // CRM Contact ID
+  billingContact: {                      // Linked CustomerContact
+    id: string
+    firstName: string
+    lastName: string
+    email: string | null
+    phone: string | null
+    customerId: string
+  } | null
   createdAt: string
   updatedAt: string
   customer: {
@@ -201,19 +212,28 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
               </div>
               <div>
                 <p className="text-sm text-gray-500">Contact Name</p>
-                <p className="text-gray-900">
-                  {quote.customer.user.firstName} {quote.customer.user.lastName}
-                </p>
+                {quote.billingContact ? (
+                  <Link 
+                    href={`/admin/customers/${quote.billingContact.id}`} 
+                    className="text-blue-600 hover:underline font-medium"
+                  >
+                    {quote.billingContactName || `${quote.billingContact.firstName} ${quote.billingContact.lastName}`}
+                  </Link>
+                ) : (
+                  <p className="text-gray-900 font-medium">
+                    {quote.billingContactName || `${quote.customer.user.firstName || ''} ${quote.customer.user.lastName || ''}`.trim() || '-'}
+                  </p>
+                )}
               </div>
               <div>
                 <p className="text-sm text-gray-500">Email</p>
-                <a href={`mailto:${quote.customer.user.email}`} className="text-blue-600 hover:underline">
-                  {quote.customer.user.email}
+                <a href={`mailto:${quote.billingContact?.email || quote.customer.user.email}`} className="text-blue-600 hover:underline">
+                  {quote.billingContact?.email || quote.customer.user.email}
                 </a>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Phone</p>
-                <p className="text-gray-900">{quote.customer.user.phone || '-'}</p>
+                <p className="text-gray-900">{quote.billingContact?.phone || quote.customer.user.phone || '-'}</p>
               </div>
             </div>
           </div>
@@ -375,6 +395,14 @@ export default function QuoteDetailPage({ params }: { params: Promise<{ id: stri
               </button>
             </div>
           </div>
+
+          {/* Legacy Info */}
+          {quote.legacyId && (
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+              <div className="text-xs text-gray-500">Legacy ID (SugarCRM)</div>
+              <div className="text-xs font-mono text-gray-600 truncate">{quote.legacyId}</div>
+            </div>
+          )}
         </div>
       </div>
     </div>

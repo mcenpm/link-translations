@@ -6,7 +6,13 @@ import { ArrowLeft, User, Globe, Mail, Phone, MapPin, Award, Calendar, Star, Edi
 
 interface Linguist {
   id: string
+  linguistNumber: number | null
+  crmId: string | null
   userId: string
+  firstName: string | null
+  lastName: string | null
+  email: string | null
+  phone: string | null
   dateOfBirth: string | null
   gender: string | null
   address: string | null
@@ -15,27 +21,27 @@ interface Linguist {
   zipCode: string | null
   country: string | null
   bio: string | null
-  experience: number | null
-  specializations: string | null
+  experience: string | null
+  specializations: string[]
   education: string | null
   certifications: string | null
-  defaultRatePerWord: number | null
-  defaultMinimumCharge: number | null
+  ratePerWord: number | null
+  minimumCharge: number | null
   isActive: boolean
   isVerified: boolean
   verificationDate: string | null
   portfolioUrl: string | null
-  totalQuotesCompleted: number
-  averageRating: number | null
+  languages: string[]
+  nativeLanguage: string | null
   createdAt: string
   updatedAt: string
-  user: {
+  user?: {
     email: string
     firstName: string | null
     lastName: string | null
     phone: string | null
-  }
-  languages: {
+  } | null
+  linguistLanguages: {
     id: string
     level: string
     discipline: string
@@ -109,7 +115,10 @@ export default function LinguistDetailPage({ params }: { params: Promise<{ id: s
     )
   }
 
-  const fullName = `${linguist.user.firstName || ''} ${linguist.user.lastName || ''}`.trim() || 'Unknown'
+  const fullName = `${linguist.firstName || linguist.user?.firstName || ''} ${linguist.lastName || linguist.user?.lastName || ''}`.trim() || 'Unknown'
+  const displayEmail = linguist.email || linguist.user?.email || '-'
+  const displayPhone = linguist.phone || linguist.user?.phone || '-'
+  const displayInitial = (linguist.firstName?.[0] || linguist.user?.firstName?.[0] || 'L').toUpperCase()
 
   return (
     <div className="p-8">
@@ -121,7 +130,7 @@ export default function LinguistDetailPage({ params }: { params: Promise<{ id: s
           </Link>
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-              {(linguist.user.firstName?.[0] || 'L').toUpperCase()}
+              {displayInitial}
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{fullName}</h1>
@@ -163,8 +172,8 @@ export default function LinguistDetailPage({ params }: { params: Promise<{ id: s
                 <Mail className="w-5 h-5 text-gray-400" />
                 <div>
                   <p className="text-sm text-gray-500">Email</p>
-                  <a href={`mailto:${linguist.user.email}`} className="text-blue-600 hover:underline">
-                    {linguist.user.email}
+                  <a href={`mailto:${displayEmail}`} className="text-blue-600 hover:underline">
+                    {displayEmail}
                   </a>
                 </div>
               </div>
@@ -172,7 +181,7 @@ export default function LinguistDetailPage({ params }: { params: Promise<{ id: s
                 <Phone className="w-5 h-5 text-gray-400" />
                 <div>
                   <p className="text-sm text-gray-500">Phone</p>
-                  <p className="text-gray-900">{linguist.user.phone || '-'}</p>
+                  <p className="text-gray-900">{displayPhone}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 col-span-2">
@@ -194,9 +203,9 @@ export default function LinguistDetailPage({ params }: { params: Promise<{ id: s
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <Globe className="w-5 h-5 text-blue-600" /> Languages
             </h2>
-            {linguist.languages && linguist.languages.length > 0 ? (
+            {linguist.linguistLanguages && linguist.linguistLanguages.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {linguist.languages.map((lang) => (
+                {linguist.linguistLanguages.map((lang) => (
                   <div key={lang.id} className="p-4 bg-gray-50 rounded-lg">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-medium text-gray-900">{lang.language.name}</h3>
@@ -345,6 +354,10 @@ export default function LinguistDetailPage({ params }: { params: Promise<{ id: s
             </h2>
             <div className="space-y-3">
               <div>
+                <p className="text-sm text-gray-500">Linguist ID</p>
+                <p className="text-gray-900 font-semibold">#{linguist.linguistNumber || '-'}</p>
+              </div>
+              <div>
                 <p className="text-sm text-gray-500">Member Since</p>
                 <p className="text-gray-900">{new Date(linguist.createdAt).toLocaleDateString()}</p>
               </div>
@@ -360,6 +373,14 @@ export default function LinguistDetailPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
           </div>
+
+          {/* Legacy Info */}
+          {linguist.crmId && (
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+              <div className="text-xs text-gray-500">Legacy ID (SugarCRM)</div>
+              <div className="text-xs font-mono text-gray-600 truncate">{linguist.crmId}</div>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="bg-white rounded-lg shadow p-6">

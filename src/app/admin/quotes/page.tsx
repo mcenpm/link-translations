@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 
 interface Quote {
@@ -27,45 +27,42 @@ export default function AdminQuotesPage() {
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const [totalCount, setTotalCount] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const itemsPerPage = 20
+
+  const fetchQuotes = useCallback(async () => {
+    setLoading(true)
+    try {
+      const statusParam = filterStatus ? `&status=${filterStatus}` : ''
+      const response = await fetch(`/api/quotes?page=${currentPage}&limit=${itemsPerPage}${statusParam}`)
+      const data = await response.json()
+      setQuotes(data.data || [])
+      setTotalCount(data.pagination?.total || 0)
+      setTotalPages(data.pagination?.pages || 0)
+    } catch (error) {
+      console.error('Error fetching quotes:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [currentPage, filterStatus])
 
   useEffect(() => {
-    const fetchQuotes = async () => {
-      try {
-        const response = await fetch('/api/quotes?limit=1000')
-        const data = await response.json()
-        setQuotes(Array.isArray(data) ? data : data.data || [])
-      } catch (error) {
-        console.error('Error fetching quotes:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchQuotes()
-  }, [])
-
-  const filteredQuotes = filterStatus
-    ? quotes.filter((quote) => quote.status === filterStatus)
-    : quotes
-
-  const paginatedQuotes = filteredQuotes.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  )
-
-  const totalPages = Math.ceil(filteredQuotes.length / itemsPerPage)
+  }, [fetchQuotes])
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       DRAFT: 'bg-gray-100 text-gray-800',
-      SUBMITTED: 'bg-yellow-100 text-yellow-800',
-      REVIEWED: 'bg-blue-100 text-blue-800',
-      ACCEPTED: 'bg-green-100 text-green-800',
-      REJECTED: 'bg-red-100 text-red-800',
-      IN_PROGRESS: 'bg-purple-100 text-purple-800',
-      COMPLETED: 'bg-green-100 text-green-800',
-      PAID: 'bg-emerald-100 text-emerald-800',
+      REVIEWING: 'bg-yellow-100 text-yellow-800',
+      NEGOTIATION: 'bg-blue-100 text-blue-800',
+      FOLLOW_UP: 'bg-orange-100 text-orange-800',
+      INVOICE_PAID: 'bg-green-100 text-green-800',
+      INVOICE_NOT_PAID: 'bg-red-100 text-red-800',
+      REJECTED_PRICE: 'bg-red-100 text-red-800',
+      REJECTED_OTHER: 'bg-red-100 text-red-800',
+      REFUND: 'bg-purple-100 text-purple-800',
+      BAD_DEBT: 'bg-gray-100 text-gray-800',
     }
     return colors[status] || 'bg-gray-100 text-gray-800'
   }
@@ -73,7 +70,10 @@ export default function AdminQuotesPage() {
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Quotes</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Quotes</h1>
+          <p className="text-sm text-gray-500 mt-1">Total: {totalCount.toLocaleString()} quotes</p>
+        </div>
         <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
           Create New Quote
         </button>
@@ -91,19 +91,21 @@ export default function AdminQuotesPage() {
           >
             <option value="">All Statuses</option>
             <option value="DRAFT">Draft</option>
-            <option value="SUBMITTED">Submitted</option>
-            <option value="REVIEWED">Reviewed</option>
-            <option value="ACCEPTED">Accepted</option>
-            <option value="REJECTED">Rejected</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="PAID">Paid</option>
+            <option value="REVIEWING">Reviewing</option>
+            <option value="NEGOTIATION">Negotiation</option>
+            <option value="FOLLOW_UP">Follow Up</option>
+            <option value="INVOICE_PAID">Invoice Paid</option>
+            <option value="INVOICE_NOT_PAID">Invoice Not Paid</option>
+            <option value="REJECTED_PRICE">Rejected (Price)</option>
+            <option value="REJECTED_OTHER">Rejected (Other)</option>
+            <option value="REFUND">Refund</option>
+            <option value="BAD_DEBT">Bad Debt</option>
           </select>
         </div>
 
         {loading ? (
           <div className="p-6 text-center text-gray-600">Loading quotes...</div>
-        ) : paginatedQuotes.length === 0 ? (
+        ) : quotes.length === 0 ? (
           <div className="p-6 text-center text-gray-600">No quotes found.</div>
         ) : (
           <div className="overflow-x-auto">
@@ -120,7 +122,7 @@ export default function AdminQuotesPage() {
                 </tr>
               </thead>
               <tbody>
-                {paginatedQuotes.map((quote) => (
+                {quotes.map((quote) => (
                   <tr key={quote.id} className="border-b hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => window.location.href = `/admin/quotes/${quote.id}`}>
                     <td className="px-6 py-4 text-sm font-mono text-blue-600 hover:underline">{quote.quoteNumber}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{quote.customer?.company || '-'}</td>
@@ -133,7 +135,7 @@ export default function AdminQuotesPage() {
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(quote.status)}`}>
-                        {quote.status}
+                        {quote.status.replace(/_/g, ' ')}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">
@@ -148,23 +150,37 @@ export default function AdminQuotesPage() {
         )}
 
         {totalPages > 1 && (
-          <div className="p-6 flex justify-center gap-2">
+          <div className="p-6 flex justify-center items-center gap-4">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(1)}
+              className="px-3 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-50"
+            >
+              First
+            </button>
             <button
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(currentPage - 1)}
-              className="px-4 py-2 border rounded-lg disabled:opacity-50"
+              className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-50"
             >
               Previous
             </button>
             <span className="px-4 py-2 text-gray-600">
-              Page {currentPage} of {totalPages}
+              Page {currentPage} of {totalPages.toLocaleString()}
             </span>
             <button
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(currentPage + 1)}
-              className="px-4 py-2 border rounded-lg disabled:opacity-50"
+              className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-50"
             >
               Next
+            </button>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(totalPages)}
+              className="px-3 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-50"
+            >
+              Last
             </button>
           </div>
         )}

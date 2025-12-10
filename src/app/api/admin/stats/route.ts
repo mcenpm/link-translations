@@ -5,17 +5,16 @@ export async function GET() {
   try {
     // Get counts
     const [
-      totalContacts,
+      totalCustomers,
       totalLinguists,
       pendingQuotes,
       totalQuotes,
       recentQuotes,
-      recentContacts,
-      languageStats
+      activeLinguists
     ] = await Promise.all([
-      prisma.customerContact.count(),
+      prisma.customer.count(),
       prisma.linguist.count(),
-      prisma.quote.count({ where: { status: 'QUOTE_SENT' } }),
+      prisma.quote.count({ where: { status: 'REVIEWING' } }),
       prisma.quote.count(),
       prisma.quote.findMany({
         take: 5,
@@ -34,27 +33,15 @@ export async function GET() {
           }
         }
       }),
-      prisma.customerContact.findMany({
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.languagePair.findMany({
-        include: {
-          sourceLanguage: true,
-          targetLanguage: true,
-          _count: { select: { quotes: true } }
-        },
-        orderBy: { quotes: { _count: 'desc' } },
-        take: 5
-      })
+      prisma.linguist.count({ where: { isActive: true } })
     ])
 
-    // Calculate total revenue from paid quotes
-    const completedQuotes = await prisma.quote.findMany({
-      where: { status: 'INVOICE_PAID' },
-      select: { total: true }
+    // Calculate total revenue from paid AND unpaid invoices
+    const revenueResult = await prisma.quote.aggregate({
+      where: { status: { in: ['INVOICE_PAID', 'INVOICE_NOT_PAID'] } },
+      _sum: { total: true }
     })
-    const totalRevenue = completedQuotes.reduce((sum, q) => sum + (q.total || 0), 0)
+    const totalRevenue = revenueResult._sum.total || 0
 
     // Get quotes this month
     const startOfMonth = new Date()
@@ -68,15 +55,14 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: {
-        totalCustomers: totalContacts,
+        totalCustomers,
         totalLinguists,
         pendingQuotes,
         totalQuotes,
         totalRevenue,
         quotesThisMonth,
-        recentQuotes,
-        recentCustomers: recentContacts,
-        languageStats
+        activeLinguists,
+        recentQuotes
       }
     })
   } catch (error) {

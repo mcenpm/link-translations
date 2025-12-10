@@ -68,11 +68,14 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const customerId = searchParams.get('customerId')
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const status = searchParams.get('status')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100)
     const page = parseInt(searchParams.get('page') || '1')
     const skip = (page - 1) * limit
 
-    const where = customerId ? { customerId } : {}
+    const where: any = {}
+    if (customerId) where.customerId = customerId
+    if (status) where.status = status
 
     const [quotes, total] = await Promise.all([
       prisma.quote.findMany({

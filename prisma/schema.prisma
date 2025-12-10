@@ -43,6 +43,7 @@ model User {
 
 model Customer {
   id              String            @id @default(cuid())
+  legacyId        String?           @unique // SugarCRM account id
   userId          String            @unique
   company         String
   website         String?
@@ -74,6 +75,7 @@ model Customer {
 
 model CustomerContact {
   id         String   @id @default(cuid())
+  legacyId   String?  @unique  // CRM contact ID
   customerId String
   firstName  String
   lastName   String
@@ -87,6 +89,7 @@ model CustomerContact {
   quotes     Quote[]
 
   @@index([customerId])
+  @@index([legacyId])
 }
 
 model Language {
@@ -121,6 +124,8 @@ model LanguagePair {
 
 model Linguist {
   id                   String             @id @default(cuid())
+  linguistNumber       Int?               @unique // Sequential number (1, 2, 3...)
+  crmId                String?            @unique // SugarCRM vendor ID
   userId               String             @unique
   firstName            String
   lastName             String
@@ -213,6 +218,10 @@ model Quote {
   actualDeliveryDate    DateTime?
   notes                 String?
   internalNotes         String?
+  
+  // CRM Billing Contact (person who ordered)
+  billingContactName    String?       // billing_contact from CRM
+  billingContactCrmId   String?       // billing_contact_id from CRM (SugarCRM contact ID)
   
   // Assignment/Interpretation Details
   discipline            String?
@@ -383,13 +392,13 @@ enum Discipline {
 
 enum QuoteStatus {
   DRAFT
-  QUOTE_SENT
-  NEGOTIATION_REVIEW
+  REVIEWING          // Was QUOTE_SENT - "Quote Sent" in CRM
+  NEGOTIATION        // Was NEGOTIATION_REVIEW - "Negotiation/Review" in CRM
   FOLLOW_UP
   INVOICE_PAID
   INVOICE_NOT_PAID
-  REJECTED_PRICE
-  REJECTED_OTHER
+  REJECTED_PRICE     // "Rejected due to Price" in CRM
+  REJECTED_OTHER     // "Rejected (Other)" in CRM
   REFUND
   BAD_DEBT
 }

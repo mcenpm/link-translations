@@ -6,6 +6,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
 
     const state = searchParams.get('state') || undefined
+    const search = searchParams.get('search') || ''
     const page = parseInt(searchParams.get('page') || '1')
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 1000)
 
@@ -14,16 +15,32 @@ export async function GET(request: Request) {
     const where: any = {}
 
     if (state) where.state = state
+    
+    // Add search functionality
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { state: { contains: search, mode: 'insensitive' } },
+        { city: { contains: search, mode: 'insensitive' } },
+      ]
+    }
 
     const [linguists, total] = await Promise.all([
       prisma.linguist.findMany({
         where,
         select: {
           id: true,
+          linguistNumber: true,
+          crmId: true,
           firstName: true,
           lastName: true,
           email: true,
           phone: true,
+          city: true,
+          state: true,
+          country: true,
           nativeLanguage: true,
           languages: true,
           specializations: true,
@@ -32,10 +49,18 @@ export async function GET(request: Request) {
           isActive: true,
           isVerified: true,
           createdAt: true,
+          user: {
+            select: {
+              email: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+            }
+          }
         },
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { linguistNumber: 'asc' },
       }),
       prisma.linguist.count({ where }),
     ])

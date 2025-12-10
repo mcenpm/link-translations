@@ -91,7 +91,7 @@ export default function AdminLayout({
             className={navLinkClass('/admin/customers')}
           >
             <Users className="w-5 h-5" />
-            Contacts
+            Customers
           </Link>
           <Link 
             href="/admin/linguists" 

@@ -62,21 +62,27 @@ function mapState(state: string | null): string | null {
 
 // Map quote status
 function mapQuoteStatus(status: string | null): QuoteStatus {
-  if (!status) return QuoteStatus.SUBMITTED
+  if (!status) return QuoteStatus.DRAFT
   
   const statusMap: Record<string, QuoteStatus> = {
-    'Pending Approval': QuoteStatus.SUBMITTED,
-    'Approved': QuoteStatus.ACCEPTED,
-    'Rejected': QuoteStatus.REJECTED,
-    'Invoice Paid': QuoteStatus.PAID,
-    'Invoiced': QuoteStatus.COMPLETED,
-    'In Progress': QuoteStatus.IN_PROGRESS,
-    'Completed': QuoteStatus.COMPLETED,
-    'Cancelled': QuoteStatus.CANCELLED,
+    'Pending Approval': QuoteStatus.QUOTE_SENT,
+    'Approved': QuoteStatus.INVOICE_PAID,
+    'Rejected': QuoteStatus.REJECTED_OTHER,
+    'Invoice Paid': QuoteStatus.INVOICE_PAID,
+    'Invoiced': QuoteStatus.INVOICE_NOT_PAID,
+    'In Progress': QuoteStatus.FOLLOW_UP,
+    'Completed': QuoteStatus.INVOICE_PAID,
+    'Cancelled': QuoteStatus.REJECTED_OTHER,
     'Draft': QuoteStatus.DRAFT,
+    'Quote Sent': QuoteStatus.QUOTE_SENT,
+    'Negotiation Review': QuoteStatus.NEGOTIATION_REVIEW,
+    'Follow Up': QuoteStatus.FOLLOW_UP,
+    'Rejected Price': QuoteStatus.REJECTED_PRICE,
+    'Refund': QuoteStatus.REFUND,
+    'Bad Debt': QuoteStatus.BAD_DEBT,
   }
   
-  return statusMap[status] || QuoteStatus.SUBMITTED
+  return statusMap[status] || QuoteStatus.DRAFT
 }
 
 // Map discipline
@@ -268,21 +274,24 @@ async function importVendors() {
       })
       
       // Parse experience years
-      let experienceYears = 0
+      let experienceStr = ''
       if (vendor.experience) {
-        const match = vendor.experience.match(/(\d+)/)
-        if (match) experienceYears = parseInt(match[1])
+        experienceStr = vendor.experience
       }
       
       await prisma.linguist.create({
         data: {
           userId: user.id,
+          firstName: firstName || 'Unknown',
+          lastName: lastName || 'Unknown',
+          email: finalEmail,
+          phone,
           bio: vendor.subjects ? `Specializes in: ${vendor.subjects}` : null,
           city: vendor.primary_address_city,
           state: mapState(vendor.primary_address_state),
           country: vendor.primary_address_country,
-          experience: experienceYears,
-          specializations: vendor.discipline ? mapDiscipline(vendor.discipline) : null,
+          experience: experienceStr || null,
+          specializations: vendor.discipline ? [vendor.discipline] : [],
           isActive: true,
           isVerified: true,
         }

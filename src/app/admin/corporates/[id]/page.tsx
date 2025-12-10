@@ -34,6 +34,7 @@ interface Project {
 
 interface Corporate {
   id: string
+  legacyId: string | null
   company: string
   website: string | null
   industry: string | null
@@ -149,6 +150,14 @@ export default function CorporateDetailPage({ params }: { params: Promise<{ id: 
           </div>
         </div>
       </div>
+
+      {/* Legacy Info */}
+      {corporate.legacyId && (
+        <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-8">
+          <div className="text-xs text-gray-500">Legacy ID (SugarCRM)</div>
+          <div className="text-xs font-mono text-gray-600 truncate">{corporate.legacyId}</div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-6 mb-8">
