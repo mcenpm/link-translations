@@ -124,7 +124,7 @@ async function main() {
           data: { legacyId: crmId }
         })
         updated++
-      } catch (error) {
+      } catch {
         // Likely duplicate legacyId, skip
         notFound++
       }

@@ -87,7 +87,6 @@ async function main() {
   
   let updated = 0
   let notFound = 0
-  let alreadySet = 0
   
   for (let i = 0; i < quotes.length; i++) {
     const quote = quotes[i]
