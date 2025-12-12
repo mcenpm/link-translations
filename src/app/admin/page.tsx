@@ -82,6 +82,15 @@ export default function AdminDashboard() {
     return `${days} days ago`
   }
 
+  const formatCurrency = (amount: number) => {
+    if (amount >= 1000000) {
+      return `$${(amount / 1000000).toFixed(1)}M`
+    } else if (amount >= 1000) {
+      return `$${(amount / 1000).toFixed(1)}K`
+    }
+    return `$${amount.toFixed(2)}`
+  }
+
   return (
     <div className="p-8">
       {/* Header */}
@@ -99,7 +108,7 @@ export default function AdminDashboard() {
             </div>
           </div>
           <h3 className="text-gray-500 text-sm font-medium">Total Corporates</h3>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalCorporates?.toLocaleString() || 0}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1 truncate">{stats?.totalCorporates?.toLocaleString() || 0}</p>
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -109,7 +118,7 @@ export default function AdminDashboard() {
             </div>
           </div>
           <h3 className="text-gray-500 text-sm font-medium">Total Contacts</h3>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalContacts?.toLocaleString() || 0}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1 truncate">{stats?.totalContacts?.toLocaleString() || 0}</p>
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -119,7 +128,7 @@ export default function AdminDashboard() {
             </div>
           </div>
           <h3 className="text-gray-500 text-sm font-medium">Total Linguists</h3>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalLinguists || 0}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1 truncate">{stats?.totalLinguists || 0}</p>
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -134,7 +143,7 @@ export default function AdminDashboard() {
             )}
           </div>
           <h3 className="text-gray-500 text-sm font-medium">Total Quotes</h3>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalQuotes || 0}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1 truncate">{stats?.totalQuotes || 0}</p>
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -143,9 +152,9 @@ export default function AdminDashboard() {
               <DollarSign className="w-6 h-6 text-green-600" />
             </div>
           </div>
-          <h3 className="text-gray-500 text-sm font-medium">Total Revenue</h3>
-          <p className="text-3xl font-bold text-gray-900 mt-1">
-            ${(stats?.totalRevenue || 0).toLocaleString()}
+          <h3 className="text-gray-500 text-sm font-medium">All Time Revenue</h3>
+          <p className="text-2xl font-bold text-gray-900 mt-1">
+            {formatCurrency(stats?.totalRevenue || 0)}
           </p>
         </div>
       </div>

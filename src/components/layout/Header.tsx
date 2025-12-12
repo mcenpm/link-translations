@@ -91,10 +91,11 @@ export function Header() {
             
             {status === 'loading' ? (
               <div className="w-24 h-10 bg-gray-100 rounded-full animate-pulse" />
-            ) : session && !(session.user as { isAdmin?: boolean })?.isAdmin ? (
+            ) : session?.user?.role === 'CUSTOMER' ? (
+              // Customer user - show customer dashboard
               <div className="flex items-center gap-2">
                 <Link 
-                  href="/dashboard"
+                  href="/customer/dashboard"
                   className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-full transition-all ${
                     isScrolled || !isHomepage
                       ? 'text-gray-700 hover:bg-gray-100'
@@ -111,7 +112,30 @@ export function Header() {
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
+            ) : session?.user?.role === 'LINGUIST' ? (
+              // Linguist user - show linguist dashboard
+              <div className="flex items-center gap-2">
+                <Link 
+                  href="/linguist/dashboard"
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-full transition-all ${
+                    isScrolled || !isHomepage
+                      ? 'text-gray-700 hover:bg-gray-100'
+                      : 'text-white/80 hover:bg-white/10'
+                  }`}
+                >
+                  <User className="w-4 h-4" />
+                  Portal
+                </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
             ) : (
+              // Not logged in OR Admin user - show sign in and quote buttons
+              // (Admin uses separate /admin system, so they can still use customer login)
               <>
                 <Link 
                   href="/login"
@@ -124,7 +148,7 @@ export function Header() {
                   Sign In
                 </Link>
                 <Link 
-                  href="/quote"
+                  href="/quote?reset=true"
                   className="group inline-flex items-center gap-2 px-6 py-3 text-sm font-bold rounded-full bg-white text-black hover:scale-105 transition-all duration-300 shadow-lg shadow-black/10"
                 >
                   Get Quote
@@ -207,7 +231,7 @@ export function Header() {
               1-877-272-LINK
             </a>
             <Link 
-              href="/quote"
+              href="/quote?reset=true"
               className="flex items-center justify-center gap-3 w-full py-4 text-lg font-bold text-black bg-white rounded-full hover:bg-cyan-400 transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >

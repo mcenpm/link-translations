@@ -33,12 +33,14 @@ model User {
   firstName String?
   lastName  String?
   phone     String?
+  googleId  String?    @unique // Google OAuth ID
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   corporate Corporate?
   linguist  Linguist?
 
   @@index([email])
+  @@index([googleId])
 }
 
 model Corporate {
@@ -90,6 +92,7 @@ model Contact {
   updatedAt     DateTime  @updatedAt
   corporate     Corporate @relation(fields: [corporateId], references: [id], onDelete: Cascade)
   quotes        Quote[]
+  projects      Project[]
 
   @@map("CustomerContact")
   @@index([corporateId])
@@ -105,6 +108,12 @@ model Language {
   sourceLanguagePairs LanguagePair[]     @relation("sourceLanguage")
   targetLanguagePairs LanguagePair[]     @relation("targetLanguage")
   linguistLanguages   LinguistLanguage[]
+  pricingAsSource     PricingRule[]      @relation("pricingSourceLang")
+  pricingAsTarget     PricingRule[]      @relation("pricingTargetLang")
+  quotesAsSource      Quote[]            @relation("QuoteSourceLanguage")
+  quotesAsTarget      Quote[]            @relation("QuoteTargetLanguage")
+  projectsAsSource    Project[]          @relation("ProjectSourceLanguage")
+  projectsAsTarget    Project[]          @relation("ProjectTargetLanguage")
 
   @@index([code])
 }
@@ -151,6 +160,16 @@ model Linguist {
   certifications       String?
   ratePerWord          Float?
   minimumCharge        Float?
+  
+  // Interpretation specific fields
+  hourlyRate           Float?             // Interpretation hourly rate
+  availableForOnSite   Boolean            @default(false)
+  maxTravelDistance    Int?               // Maximum travel distance in miles
+  
+  // Geo location for on-site matching
+  latitude             Float?
+  longitude            Float?
+  
   isActive             Boolean            @default(true)
   isVerified           Boolean            @default(false)
   verificationDate     DateTime?
@@ -163,10 +182,13 @@ model Linguist {
   assignments          Assignment[]
   user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   linguistLanguages    LinguistLanguage[]
+  jobInvitations       JobInvitation[]
+  purchaseOrders       PurchaseOrder[]
 
   @@index([state])
   @@index([isActive])
   @@index([isVerified])
+  @@index([availableForOnSite])
 }
 
 model LinguistLanguage {
@@ -236,6 +258,18 @@ model Quote {
   contactPersonPhone    String?
   contactPersonEmail    String?
   
+  // New Quote Wizard Fields
+  serviceType           String?       // 'translation' or 'interpretation'
+  sourceLanguageId      String?
+  targetLanguageId      String?
+  totalPrice            Float?
+  
+  // Stripe Payment Fields
+  stripeSessionId       String?
+  stripePaymentIntentId String?
+  paymentStatus         String?       @default("unpaid") // unpaid, pending, paid, failed, expired
+  paidAt                DateTime?
+  
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   assignments           Assignment[]
@@ -244,6 +278,8 @@ model Quote {
   corporate             Corporate     @relation(fields: [customerId], references: [id])
   contact               Contact?      @relation(fields: [contactId], references: [id])
   languagePair          LanguagePair? @relation(fields: [languagePairId], references: [id])
+  srcLanguage           Language?     @relation("QuoteSourceLanguage", fields: [sourceLanguageId], references: [id])
+  tgtLanguage           Language?     @relation("QuoteTargetLanguage", fields: [targetLanguageId], references: [id])
 
   @@index([customerId])
   @@index([contactId])
@@ -253,22 +289,33 @@ model Quote {
 }
 
 model Project {
-  id              String        @id @default(cuid())
-  projectNumber   String        @unique
-  quoteId         String        @unique
-  customerId      String
-  name            String?
-  description     String?
-  status          ProjectStatus @default(IN_PROGRESS)
-  startDate       DateTime      @default(now())
-  dueDate         DateTime?
-  completedDate   DateTime?
-  notes           String?
-  internalNotes   String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  quote           Quote         @relation(fields: [quoteId], references: [id])
-  corporate       Corporate     @relation(fields: [customerId], references: [id])
+  id               String          @id @default(cuid())
+  projectNumber    String          @unique @default(cuid())
+  quoteId          String?         @unique
+  customerId       String?
+  contactId        String?
+  corporateId      String?
+  name             String?
+  description      String?
+  status           ProjectStatus   @default(IN_PROGRESS)
+  startDate        DateTime        @default(now())
+  dueDate          DateTime?
+  completedDate    DateTime?
+  notes            String?
+  internalNotes    String?
+  serviceType      String?
+  sourceLanguageId String?
+  targetLanguageId String?
+  totalPrice       Float?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  quote            Quote?          @relation(fields: [quoteId], references: [id])
+  corporate        Corporate?      @relation(fields: [customerId], references: [id])
+  contact          Contact?        @relation(fields: [contactId], references: [id])
+  srcLanguage      Language?       @relation("ProjectSourceLanguage", fields: [sourceLanguageId], references: [id])
+  tgtLanguage      Language?       @relation("ProjectTargetLanguage", fields: [targetLanguageId], references: [id])
+  jobInvitations   JobInvitation[]
+  purchaseOrders   PurchaseOrder[]
 
   @@index([customerId])
   @@index([status])
@@ -345,6 +392,31 @@ model Invoice {
   @@index([invoiceNumber])
 }
 
+model PurchaseOrder {
+  id          String        @id @default(cuid())
+  poNumber    String        @unique
+  linguistId  String
+  projectId   String?
+  description String?
+  quantity    Float?
+  unit        String?       @default("words")
+  rate        Float?
+  total       Float
+  status      POStatus      @default(PENDING)
+  issuedAt    DateTime      @default(now())
+  paidAt      DateTime?
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  linguist    Linguist      @relation(fields: [linguistId], references: [id])
+  project     Project?      @relation(fields: [projectId], references: [id])
+
+  @@index([linguistId])
+  @@index([projectId])
+  @@index([poNumber])
+  @@index([status])
+}
+
 model Payment {
   id            String        @id @default(cuid())
   invoiceId     String
@@ -412,6 +484,8 @@ enum ProjectStatus {
   PAUSED
   REMOVED
   COMPLETED
+  SEEKING_INTERPRETER
+  INTERPRETER_ASSIGNED
 }
 
 enum OrderStatus {
@@ -433,6 +507,14 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum POStatus {
+  PENDING
+  APPROVED
+  SENT
+  PAID
+  CANCELLED
+}
+
 enum AssignmentStatus {
   PENDING
   ACCEPTED
@@ -440,6 +522,86 @@ enum AssignmentStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+// Service type for pricing
+enum ServiceType {
+  TRANSLATION
+  INTERPRETATION
+  TRANSCRIPTION
+}
+
+// Interpretation type for pricing modifiers
+enum InterpretationType {
+  ON_SITE
+  VIDEO_REMOTE
+  PHONE
+}
+
+// Delivery speed for rush pricing
+enum DeliverySpeed {
+  STANDARD      // Normal delivery
+  RUSH_48H      // 48 hour delivery
+  RUSH_24H      // 24 hour delivery
+  SAME_DAY      // Same day delivery
+}
+
+// Pricing rules for Translation and Interpretation services
+model PricingRule {
+  id                  String              @id @default(cuid())
+  name                String              // e.g., "Spanish Translation Standard", "Medical Interpretation NYC"
+  serviceType         ServiceType
+  
+  // Language pair (optional - null means default rate)
+  sourceLanguageId    String?
+  targetLanguageId    String?
+  sourceLanguage      Language?           @relation("pricingSourceLang", fields: [sourceLanguageId], references: [id])
+  targetLanguage      Language?           @relation("pricingTargetLang", fields: [targetLanguageId], references: [id])
+  
+  // Interpretation specific
+  interpretationType  InterpretationType?
+  
+  // Regional pricing (for on-site interpretation)
+  state               String?             // US State code for regional pricing
+  
+  // Translation rates
+  perWordRate         Decimal?            @db.Decimal(8, 4)  // e.g., 0.12 per word
+  
+  // Interpretation rates  
+  perHourRate         Decimal?            @db.Decimal(8, 2)  // e.g., 75.00 per hour
+  minimumHours        Decimal?            @db.Decimal(4, 2)  // e.g., 2.00 minimum
+  travelFee           Decimal?            @db.Decimal(8, 2)  // flat travel fee for on-site
+  
+  // Common rates
+  minimumCharge       Decimal?            @db.Decimal(8, 2)  // minimum charge for any job
+  
+  // Rush/expedited multipliers
+  rush24hMultiplier   Decimal?            @db.Decimal(4, 2)  // e.g., 1.50 for 50% extra
+  rush48hMultiplier   Decimal?            @db.Decimal(4, 2)  // e.g., 1.25 for 25% extra
+  sameDayMultiplier   Decimal?            @db.Decimal(4, 2)  // e.g., 2.00 for double
+  
+  // Volume discounts (for translation)
+  volumeDiscount1kWords   Decimal?        @db.Decimal(4, 2)  // discount % for 1000+ words
+  volumeDiscount5kWords   Decimal?        @db.Decimal(4, 2)  // discount % for 5000+ words
+  volumeDiscount10kWords  Decimal?        @db.Decimal(4, 2)  // discount % for 10000+ words
+  
+  // Document type multipliers
+  documentTypeLegal       Decimal?        @db.Decimal(4, 2)  // multiplier for legal docs
+  documentTypeMedical     Decimal?        @db.Decimal(4, 2)  // multiplier for medical docs
+  documentTypeTechnical   Decimal?        @db.Decimal(4, 2)  // multiplier for technical docs
+  
+  // Status
+  isDefault           Boolean             @default(false)    // default rate for service type
+  isActive            Boolean             @default(true)
+  priority            Int                 @default(0)        // higher = more specific/override
+  
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([serviceType])
+  @@index([sourceLanguageId, targetLanguageId])
+  @@index([state])
+  @@index([isActive])
 }
 
 enum LeadStatus {
@@ -604,4 +766,290 @@ model LegacyQuote {
   @@index([billingContactId])
   @@index([stage])
   @@index([discipline])
+}
+
+// Job Invitation for interpretation assignments
+model JobInvitation {
+  id               String              @id @default(cuid())
+  projectId        String
+  linguistId       String
+  token            String              @unique // Unique token for accept/decline links
+  status           JobInvitationStatus @default(PENDING)
+  
+  // Event details
+  eventDate        DateTime
+  eventTime        String
+  eventDuration    Float               // hours
+  eventLocation    String
+  eventDescription String?
+  distance         Float?              // miles from linguist
+  
+  // Response tracking
+  respondedAt      DateTime?
+  declineReason    String?
+  
+  // Expiration
+  expiresAt        DateTime
+  
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  
+  // Relations
+  project          Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  linguist         Linguist            @relation(fields: [linguistId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([linguistId])
+  @@index([token])
+  @@index([status])
+}
+
+enum JobInvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+// Coupon/Discount Codes
+model Coupon {
+  id              String        @id @default(cuid())
+  code            String        @unique
+  description     String?
+  discountType    DiscountType  @default(PERCENTAGE)
+  discountValue   Float         // percentage (0-100) or fixed amount
+  minimumOrder    Float?        // minimum order amount to apply
+  maxDiscount     Float?        // maximum discount amount (for percentage)
+  maxUses         Int?          // null = unlimited
+  usedCount       Int           @default(0)
+  validFrom       DateTime      @default(now())
+  validUntil      DateTime?
+  isActive        Boolean       @default(true)
+  
+  // Restrictions
+  serviceType     String?       // translation, interpretation, or null for all
+  firstOrderOnly  Boolean       @default(false)
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  usages          CouponUsage[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+model CouponUsage {
+  id          String    @id @default(cuid())
+  couponId    String
+  quoteId     String?
+  customerId  String?
+  usedAt      DateTime  @default(now())
+  discount    Float     // actual discount applied
+  
+  coupon      Coupon    @relation(fields: [couponId], references: [id], onDelete: Cascade)
+
+  @@index([couponId])
+  @@index([quoteId])
+  @@index([customerId])
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+// =============================================
+// ADMINISTRATIVE SETTINGS
+// =============================================
+
+// Company/Business Settings - singleton table
+model CompanySettings {
+  id                    String    @id @default("company_settings")
+  
+  // Company Information
+  companyName           String    @default("Link Translations")
+  legalName             String?   // Legal entity name
+  tagline               String?   @default("Professional Language Services")
+  
+  // Contact Information
+  email                 String    @default("info@linktranslations.com")
+  phone                 String    @default("(203) 254-1181")
+  tollFree              String?   @default("(800) 707-6752")
+  fax                   String?
+  website               String    @default("https://www.linktranslations.com")
+  
+  // Address
+  address               String    @default("2070 Post Road")
+  city                  String    @default("Darien")
+  state                 String    @default("CT")
+  zipCode               String    @default("06820")
+  country               String    @default("USA")
+  
+  // Business Details
+  taxId                 String?   // EIN/Tax ID
+  dunsNumber            String?   // D-U-N-S Number
+  cageCode              String?   // CAGE Code for government contracts
+  
+  // Branding
+  logoUrl               String?
+  faviconUrl            String?
+  primaryColor          String    @default("#2563eb")
+  secondaryColor        String    @default("#4f46e5")
+  
+  // Social Media
+  linkedIn              String?
+  twitter               String?
+  facebook              String?
+  
+  // PDF Settings
+  pdfHeaderText         String?   @default("Professional Translation & Interpretation Services")
+  pdfFooterText         String?
+  pdfTermsAndConditions String?   @db.Text
+  
+  // Quote Settings
+  quoteValidityDays     Int       @default(30)
+  quotePrefix           String    @default("QT")
+  quoteAutoNumber       Boolean   @default(true)
+  
+  // Invoice Settings
+  invoicePrefix         String    @default("INV")
+  invoicePaymentTerms   String    @default("Net 30")
+  invoiceBankDetails    String?   @db.Text
+  
+  // Purchase Order Settings
+  poPrefix              String    @default("PO")
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+// Email Templates - customizable email content
+model EmailTemplate {
+  id              String    @id @default(cuid())
+  slug            String    @unique // e.g., "welcome", "quote-created", "payment-received"
+  name            String    // Display name
+  description     String?   // What this template is for
+  subject         String    // Email subject line (supports variables like {{customerName}})
+  htmlContent     String    @db.Text // HTML template with variables
+  textContent     String?   @db.Text // Plain text version
+  variables       String[]  // Available variables: ["customerName", "quoteNumber", etc.]
+  isActive        Boolean   @default(true)
+  isSystem        Boolean   @default(false) // System templates can't be deleted
+  
+  category        EmailCategory @default(TRANSACTIONAL)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  emailLogs       EmailLog[]
+
+  @@index([slug])
+  @@index([category])
+}
+
+// Email Log - track all sent emails
+model EmailLog {
+  id              String        @id @default(cuid())
+  templateId      String?
+  
+  to              String[]      // Recipient email(s)
+  cc              String[]      @default([])
+  bcc             String[]      @default([])
+  from            String
+  replyTo         String?
+  
+  subject         String
+  htmlContent     String?       @db.Text
+  
+  status          EmailStatus   @default(PENDING)
+  error           String?
+  
+  // Tracking
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  bouncedAt       DateTime?
+  
+  // Related entities
+  quoteId         String?
+  projectId       String?
+  customerId      String?
+  linguistId      String?
+  
+  // External IDs
+  externalId      String?       // Resend message ID
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  template        EmailTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([templateId])
+  @@index([status])
+  @@index([to])
+  @@index([quoteId])
+  @@index([projectId])
+}
+
+// PDF Templates - document templates configuration
+model PdfTemplate {
+  id                String        @id @default(cuid())
+  type              PdfType       @unique // QUOTE, INVOICE, PURCHASE_ORDER
+  name              String
+  
+  // Header
+  showLogo          Boolean       @default(true)
+  headerBackgroundColor String    @default("#2563eb")
+  headerTextColor   String        @default("#ffffff")
+  
+  // Content
+  showCompanyAddress Boolean      @default(true)
+  showContactInfo   Boolean       @default(true)
+  
+  // Table styling
+  tableHeaderColor  String        @default("#2563eb")
+  alternateRowColor String        @default("#f9fafb")
+  
+  // Footer
+  footerText        String?       @db.Text
+  showPageNumbers   Boolean       @default(true)
+  
+  // Terms
+  termsTitle        String?       @default("Terms & Conditions")
+  termsContent      String?       @db.Text
+  
+  // Notes section
+  defaultNotes      String?       @db.Text
+  
+  isActive          Boolean       @default(true)
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+enum EmailCategory {
+  TRANSACTIONAL     // Order confirmations, receipts
+  NOTIFICATION      // Updates, reminders
+  MARKETING         // Promotions, newsletters
+  SYSTEM            // Password reset, verification
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  FAILED
+}
+
+enum PdfType {
+  QUOTE
+  INVOICE
+  PURCHASE_ORDER
+  PROJECT_SUMMARY
+  CERTIFICATE
 }

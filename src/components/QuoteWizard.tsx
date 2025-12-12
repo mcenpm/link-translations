@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { 
   CheckCircle2, Loader2, ArrowRight, ArrowLeft, FileText, Mic, 
   Globe, User, Calendar, MessageSquare, Check, MapPin, Video, Phone, Users,
-  CalendarRange, CalendarDays, Plus, X, Clock, ChevronDown, Search
+  CalendarRange, CalendarDays, Plus, X, Clock, ChevronDown, Search,
+  MessageCircle, Share2, Download
 } from 'lucide-react'
 
 // US States list
@@ -696,15 +698,50 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
+  const { data: session, update: updateSession } = useSession()
   const initialService = searchParams.get('service') || ''
   const stepParam = searchParams.get('step') || 'service'
+  const resetParam = searchParams.get('reset')
   
   const [currentStep, setCurrentStep] = useState<Step>(getStepFromName(stepParam))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [quoteNumber, setQuoteNumber] = useState('')
+  const [projectId, setProjectId] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [showConsecutiveWarning, setShowConsecutiveWarning] = useState(false)
+  
+  // Review step fields
+  const [couponCode, setCouponCode] = useState('')
+  const [referenceNumber, setReferenceNumber] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'invoice'>('card')
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  
+  // Auth mode for contact step: null = choose, 'signin' = sign in form, 'signup' = sign up form
+  const [authMode, setAuthMode] = useState<'signin' | 'signup' | null>(null)
+  const [authError, setAuthError] = useState('')
+  const [authLoading, setAuthLoading] = useState(false)
+  const [signUpData, setSignUpData] = useState({ firstName: '', lastName: '', email: '', password: '' })
+  const [signInData, setSignInData] = useState({ email: '', password: '' })
+  
+  // Pricing state for interpretation
+  const [pricing, setPricing] = useState<{
+    loading: boolean
+    error: string | null
+    data: {
+      totalHours: number
+      hourlyRate: number
+      hoursSubtotal: number
+      travelFee: number
+      rushFee: number
+      isRush: boolean
+      isSameDay: boolean
+      minimumHours: number
+      appliedMinimum: boolean
+      total: number
+      breakdown: string[]
+    } | null
+  }>({ loading: false, error: null, data: null })
   
   // Subject matters that require consecutive mode only
   const consecutiveOnlySubjects = ['deposition', 'uscis', 'hearing', 'mediation']
@@ -719,9 +756,10 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
   const [targetLangSearchTerm, setTargetLangSearchTerm] = useState('')
   const targetLangDropdownRef = useRef<HTMLDivElement>(null)
 
-  const [formData, setFormData] = useState({
+  // Default form data
+  const defaultFormData = {
     // Step 1: Service Type
-    serviceType: initialService,
+    serviceType: '',
     
     // Step 2: Languages & Details
     sourceLanguageId: '',
@@ -757,7 +795,30 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
     // Step 4: Additional Info
     description: '',
     howDidYouHear: '',
+  }
+
+  const [formData, setFormData] = useState({
+    ...defaultFormData,
+    serviceType: initialService,
   })
+
+  // Reset form when navigating to /quote fresh (step=service or no step)
+  useEffect(() => {
+    if (stepParam === 'service' || resetParam === 'true') {
+      setCurrentStep(1)
+      setSubmitStatus('idle')
+      setErrorMessage('')
+      setFormData({
+        ...defaultFormData,
+        serviceType: initialService,
+      })
+      // Remove reset param from URL
+      if (resetParam) {
+        router.replace(pathname, { scroll: false })
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetParam])
 
   // Close state dropdown when clicking outside
   useEffect(() => {
@@ -814,6 +875,164 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
     }
   }, [initialService])
 
+  // Auto-populate contact info from session if logged in
+  useEffect(() => {
+    if (session?.user) {
+      const nameParts = session.user.name?.split(' ') || ['', '']
+      setFormData(prev => ({
+        ...prev,
+        firstName: prev.firstName || nameParts[0] || '',
+        lastName: prev.lastName || nameParts.slice(1).join(' ') || '',
+        email: prev.email || session.user?.email || '',
+      }))
+    }
+  }, [session])
+
+  // Calculate interpretation pricing when relevant fields change
+  useEffect(() => {
+    const calculatePrice = async () => {
+      // Only calculate for interpretation with required fields
+      if (
+        formData.serviceType !== 'interpretation' ||
+        !formData.sourceLanguageId ||
+        !formData.targetLanguageId ||
+        !formData.interpretationSetting
+      ) {
+        setPricing({ loading: false, error: null, data: null })
+        return
+      }
+      
+      // Check for on-site requirements
+      if (formData.interpretationSetting === 'in-person' && !formData.interpretationState) {
+        setPricing({ loading: false, error: null, data: null })
+        return
+      }
+      
+      // Check for video/phone requirements
+      if ((formData.interpretationSetting === 'video-remote' || formData.interpretationSetting === 'phone') && !formData.timeZone) {
+        setPricing({ loading: false, error: null, data: null })
+        return
+      }
+      
+      // Build date/time entries based on selection mode
+      let entriesToCalculate: Array<{ date: string; startTime: string; endTime: string }> = []
+      
+      if (formData.dateSelectionMode === 'range' && formData.dateRangeStart && formData.dateRangeEnd) {
+        // Date range mode
+        if (formData.timeMode === 'same' && formData.sharedStartTime && formData.sharedEndTime) {
+          // Same time for all days - generate entries for each day in range
+          const startDate = new Date(formData.dateRangeStart)
+          const endDate = new Date(formData.dateRangeEnd)
+          const currentDate = new Date(startDate)
+          
+          while (currentDate <= endDate) {
+            entriesToCalculate.push({
+              date: currentDate.toISOString().split('T')[0],
+              startTime: formData.sharedStartTime,
+              endTime: formData.sharedEndTime,
+            })
+            currentDate.setDate(currentDate.getDate() + 1)
+          }
+        } else if (formData.timeMode === 'different') {
+          // Different times per day - use dateTimeEntries
+          entriesToCalculate = formData.dateTimeEntries.filter(
+            entry => entry.date && entry.startTime && entry.endTime
+          ).map(entry => ({
+            date: entry.date,
+            startTime: entry.startTime,
+            endTime: entry.endTime,
+          }))
+        }
+      } else if (formData.dateSelectionMode === 'multiple') {
+        // Multiple specific dates mode
+        if (formData.timeMode === 'same' && formData.sharedStartTime && formData.sharedEndTime) {
+          // Same time for all selected dates
+          entriesToCalculate = formData.dateTimeEntries.filter(
+            entry => entry.date
+          ).map(entry => ({
+            date: entry.date,
+            startTime: formData.sharedStartTime,
+            endTime: formData.sharedEndTime,
+          }))
+        } else {
+          // Different times per date
+          entriesToCalculate = formData.dateTimeEntries.filter(
+            entry => entry.date && entry.startTime && entry.endTime
+          ).map(entry => ({
+            date: entry.date,
+            startTime: entry.startTime,
+            endTime: entry.endTime,
+          }))
+        }
+      } else if (formData.dateSelectionMode === 'single') {
+        // Single date mode - use first entry or generate from shared times
+        if (formData.dateTimeEntries.length > 0 && formData.dateTimeEntries[0].date) {
+          const entry = formData.dateTimeEntries[0]
+          const startTime = entry.startTime || formData.sharedStartTime
+          const endTime = entry.endTime || formData.sharedEndTime
+          if (startTime && endTime) {
+            entriesToCalculate.push({
+              date: entry.date,
+              startTime,
+              endTime,
+            })
+          }
+        }
+      }
+      
+      // Check if we have valid entries to calculate
+      if (entriesToCalculate.length === 0) {
+        setPricing({ loading: false, error: null, data: null })
+        return
+      }
+      
+      setPricing(prev => ({ ...prev, loading: true, error: null }))
+      
+      try {
+        const response = await fetch('/api/pricing/calculate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sourceLanguageId: formData.sourceLanguageId,
+            targetLanguageId: formData.targetLanguageId,
+            interpretationSetting: formData.interpretationSetting,
+            state: formData.interpretationState,
+            timeZone: formData.timeZone,
+            dateTimeEntries: entriesToCalculate,
+          }),
+        })
+        
+        const data = await response.json()
+        
+        if (!response.ok) {
+          setPricing({ loading: false, error: data.error || 'Failed to calculate price', data: null })
+        } else {
+          setPricing({ loading: false, error: null, data })
+        }
+      } catch {
+        setPricing({ loading: false, error: 'Failed to calculate price', data: null })
+      }
+    }
+    
+    // Debounce the calculation
+    const timeoutId = setTimeout(calculatePrice, 500)
+    return () => clearTimeout(timeoutId)
+  }, [
+    formData.serviceType,
+    formData.sourceLanguageId,
+    formData.targetLanguageId,
+    formData.interpretationSetting,
+    formData.interpretationState,
+    formData.timeZone,
+    formData.dateSelectionMode,
+    formData.timeMode,
+    formData.dateRangeStart,
+    formData.dateRangeEnd,
+    formData.sharedStartTime,
+    formData.sharedEndTime,
+    formData.dateTimeEntries,
+  ])
+
   // Sync URL on initial load and step changes
   useEffect(() => {
     updateURL(currentStep)
@@ -831,6 +1050,15 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
     updateURL(currentStep, type)
   }
 
+  // Check if user is logged in as CUSTOMER - skip contact step only for customers
+  const isCustomerLoggedIn = !!session?.user && (session.user as { role?: string }).role === 'CUSTOMER'
+  
+  // Total steps based on login status
+  const totalSteps = isCustomerLoggedIn ? 3 : 4
+  
+  // Check if current step is the review step
+  const isReviewStep = isCustomerLoggedIn ? currentStep === 3 : currentStep === 4
+
   const canProceed = (): boolean => {
     switch (currentStep) {
       case 1:
@@ -846,12 +1074,31 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
           // Date selection is required
           if (!formData.dateSelectionMode) return false
           
-          // Check if at least one date is selected
+          // Check date and time requirements based on selection mode
           if (formData.dateSelectionMode === 'range') {
             if (!formData.dateRangeStart || !formData.dateRangeEnd) return false
-          } else {
-            // Single or Multiple mode
+            // Time validation for range
+            if (formData.timeMode === 'same') {
+              if (!formData.sharedStartTime || !formData.sharedEndTime) return false
+            } else {
+              // Different times - check each entry
+              const hasValidEntries = formData.dateTimeEntries.some(e => e.date && e.startTime && e.endTime)
+              if (!hasValidEntries) return false
+            }
+          } else if (formData.dateSelectionMode === 'multiple') {
             if (formData.dateTimeEntries.length === 0 || !formData.dateTimeEntries[0].date) return false
+            // Time validation for multiple
+            if (formData.timeMode === 'same') {
+              if (!formData.sharedStartTime || !formData.sharedEndTime) return false
+            } else {
+              const hasValidEntries = formData.dateTimeEntries.some(e => e.date && e.startTime && e.endTime)
+              if (!hasValidEntries) return false
+            }
+          } else {
+            // Single date mode
+            if (formData.dateTimeEntries.length === 0 || !formData.dateTimeEntries[0].date) return false
+            const entry = formData.dateTimeEntries[0]
+            if (!entry.startTime || !entry.endTime) return false
           }
           
           // In-person requires location
@@ -865,7 +1112,13 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
         
         return true
       case 3:
-        return !!formData.firstName && !!formData.lastName && !!formData.email && !!formData.phone
+        // If customer is logged in, step 3 is the Review step (no validation needed)
+        // If not logged in as customer, step 3 is Contact Information - user must sign in/up
+        if (isCustomerLoggedIn) {
+          return true // Review step
+        }
+        // Contact step requires authentication - cannot proceed without signing in/up
+        return false
       case 4:
         return true
       default:
@@ -874,53 +1127,113 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
   }
 
   const nextStep = () => {
-    if (currentStep < 4 && canProceed()) {
+    if (currentStep < totalSteps && canProceed()) {
       setCurrentStep((currentStep + 1) as Step)
+      // Scroll to top of page when changing steps
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
   const prevStep = () => {
     if (currentStep > 1) {
       setCurrentStep((currentStep - 1) as Step)
+      // Scroll to top of page when changing steps
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
+    setIsProcessingPayment(true)
     setSubmitStatus('idle')
     setErrorMessage('')
 
     try {
-      const response = await fetch('/api/quote-request', {
+      // If customer is logged in, use session data for contact info
+      const submitData = isCustomerLoggedIn && session?.user ? {
+        ...formData,
+        firstName: session.user.name?.split(' ')[0] || formData.firstName || 'Customer',
+        lastName: session.user.name?.split(' ').slice(1).join(' ') || formData.lastName || '',
+        email: session.user.email || formData.email,
+        phone: formData.phone || 'Not provided',
+        couponCode,
+        referenceNumber,
+        paymentMethod,
+        pricingData: pricing.data,
+      } : {
+        ...formData,
+        couponCode,
+        referenceNumber,
+        paymentMethod,
+        pricingData: pricing.data,
+      }
+
+      // Step 1: Create quote in database
+      const quoteResponse = await fetch('/api/quote-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       })
 
-      const data = await response.json()
+      const quoteData = await quoteResponse.json()
 
-      if (response.ok && data.success) {
-        setSubmitStatus('success')
-        setQuoteNumber(data.quoteNumber)
-      } else {
-        setSubmitStatus('error')
-        setErrorMessage(data.error || 'Something went wrong')
+      if (!quoteResponse.ok || !quoteData.success) {
+        throw new Error(quoteData.error || 'Failed to create quote')
       }
-    } catch {
+
+      // If invoice payment method, skip Stripe and show success
+      if (paymentMethod === 'invoice') {
+        setSubmitStatus('success')
+        setQuoteNumber(quoteData.quoteNumber)
+        setProjectId(quoteData.projectId || '')
+        return
+      }
+
+      // Step 2: Create Stripe checkout session
+      const checkoutResponse = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quoteId: quoteData.quoteId,
+          amount: pricing.data?.total || 0,
+          customerEmail: submitData.email,
+          customerName: `${submitData.firstName} ${submitData.lastName}`,
+          description: `Interpretation Service - ${languages.find(l => l.id === formData.sourceLanguageId)?.name} to ${languages.find(l => l.id === formData.targetLanguageId)?.name}`,
+        })
+      })
+
+      const checkoutData = await checkoutResponse.json()
+
+      if (!checkoutResponse.ok || !checkoutData.url) {
+        throw new Error(checkoutData.error || 'Failed to create checkout session')
+      }
+
+      // Step 3: Redirect to Stripe Checkout
+      window.location.href = checkoutData.url
+
+    } catch (error) {
       setSubmitStatus('error')
-      setErrorMessage('Network error. Please try again.')
+      setErrorMessage(error instanceof Error ? error.message : 'Something went wrong')
     } finally {
       setIsSubmitting(false)
+      setIsProcessingPayment(false)
     }
   }
 
-  const steps = [
-    { number: 1, title: 'Service', icon: FileText },
-    { number: 2, title: 'Details', icon: Globe },
-    { number: 3, title: 'Contact', icon: User },
-    { number: 4, title: 'Review', icon: MessageSquare },
-  ]
-
+  // Define steps - if customer is logged in, we skip the Contact step
+  const steps = isCustomerLoggedIn 
+    ? [
+        { number: 1, title: 'Service', icon: FileText },
+        { number: 2, title: 'Details', icon: Globe },
+        { number: 3, title: 'Review', icon: MessageSquare },
+      ]
+    : [
+        { number: 1, title: 'Service', icon: FileText },
+        { number: 2, title: 'Details', icon: Globe },
+        { number: 3, title: 'Contact', icon: User },
+        { number: 4, title: 'Review', icon: MessageSquare },
+      ]
+  
   // Success State
   if (submitStatus === 'success') {
     return (
@@ -1933,236 +2246,556 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                 </div>
               )}
 
-              {/* Step 3: Contact Information */}
-              {currentStep === 3 && (
+              {/* Step 3: Contact Information - Only show if NOT logged in as customer */}
+              {currentStep === 3 && !isCustomerLoggedIn && (
                 <div className="space-y-4">
                   <div className="mb-4">
                     <h2 className="text-xl font-bold text-gray-900 mb-1">Your Contact Information</h2>
-                    <p className="text-sm text-gray-600">We&apos;ll use this to send you your quote.</p>
+                    <p className="text-sm text-gray-600">Sign in or create an account to continue with your quote.</p>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">First Name *</label>
-                        <input
-                          type="text"
-                          name="firstName"
-                          value={formData.firstName}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        />
+                  {/* Auth Mode Selection */}
+                  {!authMode && (
+                    <div className="space-y-4">
+                      {/* Sign In Option */}
+                      <button
+                        type="button"
+                        onClick={() => setAuthMode('signin')}
+                        className="w-full p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 hover:border-blue-400 transition-all text-left group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                            <User className="w-6 h-6 text-blue-600" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 text-lg">Sign In</h3>
+                            <p className="text-sm text-gray-600">Already have an account? Sign in to continue.</p>
+                          </div>
+                          <ArrowRight className="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </button>
+
+                      {/* Sign Up Option */}
+                      <button
+                        type="button"
+                        onClick={() => setAuthMode('signup')}
+                        className="w-full p-5 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border-2 border-emerald-200 hover:border-emerald-400 transition-all text-left group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
+                            <Plus className="w-6 h-6 text-emerald-600" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 text-lg">Create Account</h3>
+                            <p className="text-sm text-gray-600">New here? Create an account to track your quotes.</p>
+                          </div>
+                          <ArrowRight className="w-5 h-5 text-emerald-600 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Sign In Form */}
+                  {authMode === 'signin' && (
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold text-gray-900 text-lg">Sign In</h3>
+                        <button
+                          type="button"
+                          onClick={() => { setAuthMode(null); setAuthError(''); }}
+                          className="text-sm text-gray-500 hover:text-gray-700"
+                        >
+                          ← Back
+                        </button>
                       </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Last Name *</label>
-                        <input
-                          type="text"
-                          name="lastName"
-                          value={formData.lastName}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        />
+
+                      {authError && (
+                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                          {authError}
+                        </div>
+                      )}
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                          <input
+                            type="email"
+                            value={signInData.email}
+                            onChange={(e) => setSignInData(prev => ({ ...prev, email: e.target.value }))}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="your@email.com"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                          <input
+                            type="password"
+                            value={signInData.password}
+                            onChange={(e) => setSignInData(prev => ({ ...prev, password: e.target.value }))}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="••••••••"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            // Save form data before auth
+                            localStorage.setItem('quoteFormData', JSON.stringify(formData));
+                            setAuthLoading(true);
+                            setAuthError('');
+                            try {
+                              const { signIn } = await import('next-auth/react');
+                              const result = await signIn('credentials', {
+                                email: signInData.email,
+                                password: signInData.password,
+                                redirect: false,
+                              });
+                              if (result?.error) {
+                                setAuthError('Invalid email or password');
+                                localStorage.removeItem('quoteFormData');
+                              } else {
+                                // Restore form data from localStorage
+                                const savedData = localStorage.getItem('quoteFormData');
+                                if (savedData) {
+                                  try {
+                                    const parsed = JSON.parse(savedData);
+                                    setFormData(parsed);
+                                  } catch {
+                                    // ignore
+                                  }
+                                  localStorage.removeItem('quoteFormData');
+                                }
+                                // Update session and move to review step
+                                await updateSession();
+                                setCurrentStep(4); // Move to Review step
+                                setAuthMode(null);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }
+                            } catch {
+                              setAuthError('Something went wrong. Please try again.');
+                              localStorage.removeItem('quoteFormData');
+                            } finally {
+                              setAuthLoading(false);
+                            }
+                          }}
+                          disabled={authLoading || !signInData.email || !signInData.password}
+                          className="w-full py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {authLoading ? 'Signing in...' : 'Sign In'}
+                        </button>
+
+                        <div className="relative my-4">
+                          <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-200"></div>
+                          </div>
+                          <div className="relative flex justify-center text-sm">
+                            <span className="px-3 bg-white text-gray-500">or</span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const { signIn } = await import('next-auth/react');
+                            signIn('google', { callbackUrl: window.location.href });
+                          }}
+                          className="w-full py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-3"
+                        >
+                          <svg className="w-5 h-5" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                          </svg>
+                          Continue with Google
+                        </button>
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">Email Address *</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      />
-                    </div>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Phone Number *</label>
-                        <input
-                          type="tel"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        />
+                  )}
+
+                  {/* Sign Up Form */}
+                  {authMode === 'signup' && (
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold text-gray-900 text-lg">Create Account</h3>
+                        <button
+                          type="button"
+                          onClick={() => { setAuthMode(null); setAuthError(''); }}
+                          className="text-sm text-gray-500 hover:text-gray-700"
+                        >
+                          ← Back
+                        </button>
                       </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Company (Optional)</label>
-                        <input
-                          type="text"
-                          name="company"
-                          value={formData.company}
-                          onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        />
+
+                      {authError && (
+                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                          {authError}
+                        </div>
+                      )}
+
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                            <input
+                              type="text"
+                              value={signUpData.firstName}
+                              onChange={(e) => setSignUpData(prev => ({ ...prev, firstName: e.target.value }))}
+                              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                            <input
+                              type="text"
+                              value={signUpData.lastName}
+                              onChange={(e) => setSignUpData(prev => ({ ...prev, lastName: e.target.value }))}
+                              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                          <input
+                            type="email"
+                            value={signUpData.email}
+                            onChange={(e) => setSignUpData(prev => ({ ...prev, email: e.target.value }))}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            placeholder="your@email.com"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                          <input
+                            type="password"
+                            value={signUpData.password}
+                            onChange={(e) => setSignUpData(prev => ({ ...prev, password: e.target.value }))}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            placeholder="Min. 6 characters"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            // Save form data before auth
+                            localStorage.setItem('quoteFormData', JSON.stringify(formData));
+                            setAuthLoading(true);
+                            setAuthError('');
+                            try {
+                              const res = await fetch('/api/auth/register', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  name: `${signUpData.firstName} ${signUpData.lastName}`.trim(),
+                                  email: signUpData.email,
+                                  password: signUpData.password,
+                                }),
+                              });
+                              const data = await res.json();
+                              if (!res.ok) {
+                                setAuthError(data.error || 'Registration failed');
+                                localStorage.removeItem('quoteFormData');
+                              } else {
+                                // Auto sign in after registration
+                                const { signIn } = await import('next-auth/react');
+                                await signIn('credentials', {
+                                  email: signUpData.email,
+                                  password: signUpData.password,
+                                  redirect: false,
+                                });
+                                // Restore form data from localStorage
+                                const savedData = localStorage.getItem('quoteFormData');
+                                if (savedData) {
+                                  try {
+                                    const parsed = JSON.parse(savedData);
+                                    setFormData(parsed);
+                                  } catch {
+                                    // ignore
+                                  }
+                                  localStorage.removeItem('quoteFormData');
+                                }
+                                // Update session and move to review step
+                                await updateSession();
+                                setCurrentStep(4); // Move to Review step
+                                setAuthMode(null);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }
+                            } catch {
+                              setAuthError('Something went wrong. Please try again.');
+                              localStorage.removeItem('quoteFormData');
+                            } finally {
+                              setAuthLoading(false);
+                            }
+                          }}
+                          disabled={authLoading || !signUpData.firstName || !signUpData.email || !signUpData.password}
+                          className="w-full py-3 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {authLoading ? 'Creating account...' : 'Create Account'}
+                        </button>
+
+                        <div className="relative my-4">
+                          <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-200"></div>
+                          </div>
+                          <div className="relative flex justify-center text-sm">
+                            <span className="px-3 bg-white text-gray-500">or</span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const { signIn } = await import('next-auth/react');
+                            signIn('google', { callbackUrl: window.location.href });
+                          }}
+                          className="w-full py-3 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-3"
+                        >
+                          <svg className="w-5 h-5" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                          </svg>
+                          Continue with Google
+                        </button>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
-              {/* Step 4: Review & Submit */}
-              {currentStep === 4 && (
-                <div className="space-y-4">
+              {/* Step 4: Review & Payment (or Step 3 if logged in) */}
+              {isReviewStep && (
+                <div className="space-y-5">
                   <div className="mb-4">
-                    <h2 className="text-xl font-bold text-gray-900 mb-1">Review & Submit</h2>
-                    <p className="text-sm text-gray-600">Please review your information before submitting.</p>
+                    <h2 className="text-xl font-bold text-gray-900 mb-1">Review & Pay</h2>
+                    <p className="text-sm text-gray-600">Review your quote details and complete your order.</p>
                   </div>
 
-                  {/* Summary */}
-                  <div className="space-y-4">
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm">
-                        <FileText className="w-4 h-4 text-blue-600" />
-                        Service Details
-                      </h3>
-                      <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <span className="text-gray-500">Service Type:</span>
-                          <span className="ml-2 font-medium text-gray-900 capitalize">{formData.serviceType}</span>
+                  {/* Two Column Layout - Reference Design */}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Left Column - Price & Details Summary */}
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                      {/* Price Header */}
+                      <div className="bg-gradient-to-br from-emerald-500 to-green-600 p-6 text-white">
+                        <div className="text-4xl font-bold mb-2">
+                          ${pricing.data?.total?.toFixed(2) || '0.00'}
                         </div>
-                        <div>
-                          <span className="text-gray-500">Languages:</span>
-                          <span className="ml-2 font-medium text-gray-900">
-                            {languages.find(l => l.id === formData.sourceLanguageId)?.name} → {languages.find(l => l.id === formData.targetLanguageId)?.name}
+                        {pricing.data?.isSameDay && (
+                          <span className="inline-block px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
+                            ⚡ Same-day Rush Rate Applied
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Checkmark Details */}
+                      <div className="p-5 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          </div>
+                          <span className="text-gray-700 text-sm">
+                            {pricing.data?.totalHours || 0} hours of {formData.interpretationMode || 'consecutive'} interpretation
                           </span>
                         </div>
-                        {formData.documentType && (
-                          <div>
-                            <span className="text-gray-500">Document Type:</span>
-                            <span className="ml-2 font-medium text-gray-900 capitalize">{formData.documentType.replace('-', ' ')}</span>
+                        
+                        <div className="flex items-center gap-3">
+                          <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           </div>
-                        )}
-                        {formData.interpretationSetting && (
-                          <div>
-                            <span className="text-gray-500">Setting:</span>
-                            <span className="ml-2 font-medium text-gray-900 capitalize">{formData.interpretationSetting.replace('-', ' ')}</span>
+                          <span className="text-gray-700 text-sm">
+                            {formData.dateTimeEntries[0]?.date || formData.dateRangeStart} 
+                            {formData.dateTimeEntries[0]?.startTime && ` at ${formData.dateTimeEntries[0].startTime}`}
+                            {formData.sharedStartTime && ` at ${formData.sharedStartTime}`}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           </div>
-                        )}
-                        {formData.interpretationMode && (
-                          <div>
-                            <span className="text-gray-500">Mode:</span>
-                            <span className="ml-2 font-medium text-gray-900 capitalize">{formData.interpretationMode}</span>
-                          </div>
-                        )}
-                        {formData.subjectMatter && (
-                          <div>
-                            <span className="text-gray-500">Subject:</span>
-                            <span className="ml-2 font-medium text-gray-900">{formData.subjectMatter}</span>
-                          </div>
-                        )}
-                        {(formData.interpretationLocation || formData.interpretationCity || formData.interpretationState) && (
-                          <div>
-                            <span className="text-gray-500">Location:</span>
-                            <span className="ml-2 font-medium text-gray-900">
-                              {[formData.interpretationLocation, formData.interpretationCity, formData.interpretationState].filter(Boolean).join(', ')}
+                          <span className="text-gray-700 text-sm">
+                            {languages.find(l => l.id === formData.sourceLanguageId)?.name} to {languages.find(l => l.id === formData.targetLanguageId)?.name}
+                          </span>
+                        </div>
+                        
+                        {formData.interpretationSetting === 'in-person' && formData.interpretationCity && (
+                          <div className="flex items-center gap-3">
+                            <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            </div>
+                            <span className="text-gray-700 text-sm">
+                              📍 {formData.interpretationCity}, {formData.interpretationState}
                             </span>
                           </div>
                         )}
-                      </div>
-                      {/* Date/Time Summary for Interpretation */}
-                      {formData.serviceType === 'interpretation' && (
-                        <div className="mt-3 pt-3 border-t border-gray-200">
-                          <span className="text-xs font-medium text-gray-500">Schedule:</span>
-                          {formData.dateSelectionMode === 'range' && (
-                            <div className="mt-1 text-sm">
-                              <span className="font-medium text-gray-900">
-                                {formData.dateRangeStart} to {formData.dateRangeEnd}
-                              </span>
-                              {formData.sharedStartTime && formData.sharedEndTime && (
-                                <span className="text-gray-600 ml-2">
-                                  ({formData.sharedStartTime} - {formData.sharedEndTime} daily)
-                                </span>
-                              )}
+                        
+                        {formData.interpretationSetting !== 'in-person' && (
+                          <div className="flex items-center gap-3">
+                            <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                             </div>
-                          )}
-                          {(formData.dateSelectionMode === 'single' || formData.dateSelectionMode === 'multiple') && formData.dateTimeEntries.length > 0 && (
-                            <div className="mt-1 space-y-1">
-                              {formData.dateTimeEntries.map((entry, idx) => (
-                                <div key={entry.id} className="text-sm">
-                                  <span className="font-medium text-gray-900">{entry.date}</span>
-                                  {formData.timeMode === 'same' && formData.dateSelectionMode === 'multiple' ? (
-                                    <span className="text-gray-600 ml-2">
-                                      ({formData.sharedStartTime} - {formData.sharedEndTime})
-                                    </span>
-                                  ) : (
-                                    entry.startTime && entry.endTime && (
-                                      <span className="text-gray-600 ml-2">
-                                        ({entry.startTime} - {entry.endTime})
-                                      </span>
-                                    )
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm">
-                        <User className="w-4 h-4 text-blue-600" />
-                        Contact Information
-                      </h3>
-                      <div className="grid sm:grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <span className="text-gray-500">Name:</span>
-                          <span className="ml-2 font-medium text-gray-900">{formData.firstName} {formData.lastName}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Email:</span>
-                          <span className="ml-2 font-medium text-gray-900">{formData.email}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Phone:</span>
-                          <span className="ml-2 font-medium text-gray-900">{formData.phone}</span>
-                        </div>
-                        {formData.company && (
-                          <div>
-                            <span className="text-gray-500">Company:</span>
-                            <span className="ml-2 font-medium text-gray-900">{formData.company}</span>
+                            <span className="text-gray-700 text-sm">
+                              {formData.interpretationSetting === 'video-remote' ? '🎥 Video Remote' : '📞 Phone'} session
+                            </span>
                           </div>
                         )}
+                        
+                        {/* Price Breakdown */}
+                        {pricing.data && (
+                          <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+                            <div className="flex justify-between text-sm text-gray-600">
+                              <span>{pricing.data.appliedMinimum ? `${pricing.data.minimumHours}h min` : `${pricing.data.totalHours}h`} × ${pricing.data.hourlyRate}/hr</span>
+                              <span>${pricing.data.hoursSubtotal.toFixed(2)}</span>
+                            </div>
+                            {pricing.data.travelFee > 0 && (
+                              <div className="flex justify-between text-sm text-gray-600">
+                                <span>Travel fee</span>
+                                <span>${pricing.data.travelFee.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {pricing.data.rushFee > 0 && (
+                              <div className="flex justify-between text-sm text-amber-600">
+                                <span>Rush fee (35%)</span>
+                                <span>+${pricing.data.rushFee.toFixed(2)}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Chat Link */}
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                          <button className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium">
+                            <MessageCircle className="w-4 h-4" />
+                            Chat with us now
+                          </button>
+                        </div>
                       </div>
                     </div>
-
-                    {/* Additional Notes */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Additional Notes or Instructions (Optional)
-                      </label>
-                      <textarea
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        rows={2}
-                        placeholder="Any special requirements or questions..."
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none text-sm"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        How did you hear about us?
-                      </label>
-                      <select
-                        name="howDidYouHear"
-                        value={formData.howDidYouHear}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white text-sm"
+                    
+                    {/* Right Column - Notes, Coupon, Payment */}
+                    <div className="space-y-4">
+                      {/* Notes */}
+                      <div className="bg-white rounded-xl p-4 border border-gray-200">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          📝 Enter your notes
+                        </label>
+                        <textarea
+                          name="description"
+                          value={formData.description}
+                          onChange={handleChange}
+                          rows={3}
+                          placeholder="e.g. special requirements, case details..."
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
+                        />
+                      </div>
+                      
+                      {/* Coupon & Reference */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Coupon code</label>
+                          <input
+                            type="text"
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value)}
+                            placeholder="Enter code"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Reference number</label>
+                          <input
+                            type="text"
+                            value={referenceNumber}
+                            onChange={(e) => setReferenceNumber(e.target.value)}
+                            placeholder="Optional"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Payment Method */}
+                      <div className="bg-white rounded-xl p-4 border border-gray-200">
+                        <label className="block text-sm font-medium text-gray-700 mb-3">Payment method</label>
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                            <input
+                              type="radio"
+                              name="paymentMethod"
+                              value="card"
+                              checked={paymentMethod === 'card'}
+                              onChange={() => setPaymentMethod('card')}
+                              className="w-4 h-4 text-blue-600"
+                            />
+                            <span className="text-sm text-gray-700">Pay by credit card</span>
+                            <div className="ml-auto flex items-center gap-1">
+                              <div className="w-8 h-5 bg-gradient-to-r from-blue-600 to-blue-800 rounded text-white text-[8px] flex items-center justify-center font-bold">VISA</div>
+                              <div className="w-8 h-5 bg-gradient-to-r from-red-500 to-orange-500 rounded text-white text-[8px] flex items-center justify-center font-bold">MC</div>
+                            </div>
+                          </label>
+                          <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                            <input
+                              type="radio"
+                              name="paymentMethod"
+                              value="invoice"
+                              checked={paymentMethod === 'invoice'}
+                              onChange={() => setPaymentMethod('invoice')}
+                              className="w-4 h-4 text-blue-600"
+                            />
+                            <span className="text-sm text-gray-700">Request invoice (corporate accounts)</span>
+                          </label>
+                        </div>
+                      </div>
+                      
+                      {/* Order Button */}
+                      <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={isSubmitting || isProcessingPayment || !pricing.data}
+                        className="w-full py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-lg rounded-xl hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2"
                       >
-                        <option value="">Select (optional)</option>
-                        <option value="google">Google Search</option>
-                        <option value="referral">Referral</option>
-                        <option value="returning">Returning Customer</option>
-                        <option value="attorney">Attorney Referral</option>
-                        <option value="other">Other</option>
-                      </select>
+                        {isSubmitting || isProcessingPayment ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            Order now
+                            <ArrowRight className="w-5 h-5" />
+                          </>
+                        )}
+                      </button>
+                      
+                      {/* Security Note */}
+                      <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        Secure payment powered by Stripe
+                      </div>
                     </div>
+                  </div>
+                  
+                  {/* Bottom Actions */}
+                  <div className="flex items-center justify-center gap-4 pt-4 border-t border-gray-100">
+                    <button className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-sm">
+                      <Share2 className="w-4 h-4" />
+                      Share
+                    </button>
+                    <button 
+                      onClick={() => setCurrentStep(2)}
+                      className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-sm"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Edit Quote
+                    </button>
+                    <button className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-sm">
+                      <Download className="w-4 h-4" />
+                      Download Quote
+                    </button>
                   </div>
                 </div>
               )}
@@ -2183,7 +2816,12 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                 <div />
               )}
               
-              {currentStep < 4 ? (
+              {/* Hide continue button on Contact step - user must sign in/up */}
+              {currentStep === 3 && !isCustomerLoggedIn ? (
+                <div className="text-sm text-gray-500">
+                  Please sign in or create an account to continue
+                </div>
+              ) : !isReviewStep && (
                 <button
                   type="button"
                   onClick={nextStep}
@@ -2192,25 +2830,6 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                 >
                   Continue
                   <ArrowRight className="w-4 h-4" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-semibold rounded-lg hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/25 text-sm"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      Submit Quote Request
-                      <CheckCircle2 className="w-4 h-4" />
-                    </>
-                  )}
                 </button>
               )}
             </div>

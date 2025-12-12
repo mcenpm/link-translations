@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { sendEmail, getAdminEmail } from '@/lib/email'
+import { quoteRequestEmail, adminNewOrderEmail } from '@/lib/email-templates'
+import { calculateInterpretationPrice } from '@/lib/pricing/interpretation'
 
 // Generate unique quote number
 function generateQuoteNumber() {
@@ -32,10 +35,19 @@ export async function POST(request: NextRequest) {
       wordCount,
       deadline,
       
-      // Interpretation Details (optional)
+      // Interpretation Details
+      interpretationSetting, // 'in-person', 'video-remote', 'phone'
+      interpretationMode, // 'consecutive', 'simultaneous'
+      subjectMatter,
+      interpretationLocation,
+      interpretationCity,
+      interpretationState,
+      timeZone,
+      dateTimeEntries, // Array of { date, startTime, endTime }
+      
+      // Legacy interpretation fields (for backwards compatibility)
       interpretationType,
       interpretationDate,
-      interpretationLocation,
       
       // Additional Info
       description,
@@ -129,12 +141,41 @@ Service Type: ${serviceType}
 Document Type: ${documentType || 'Not specified'}
 Word Count: ${wordCount || 'To be determined'}
 Deadline: ${deadline || 'Flexible'}
-${interpretationType ? `\nInterpretation Type: ${interpretationType}` : ''}
-${interpretationDate ? `Interpretation Date: ${interpretationDate}` : ''}
-${interpretationLocation ? `Location: ${interpretationLocation}` : ''}
+${interpretationType || interpretationSetting ? `\nInterpretation Type: ${interpretationSetting || interpretationType}` : ''}
+${interpretationMode ? `Interpretation Mode: ${interpretationMode}` : ''}
+${subjectMatter ? `Subject Matter: ${subjectMatter}` : ''}
+${interpretationDate || (dateTimeEntries && dateTimeEntries.length > 0) ? `Interpretation Date(s): ${interpretationDate || dateTimeEntries.map((e: { date: string; startTime: string; endTime: string }) => `${e.date} ${e.startTime}-${e.endTime}`).join(', ')}` : ''}
+${interpretationLocation || interpretationCity ? `Location: ${interpretationLocation || ''} ${interpretationCity || ''} ${interpretationState || ''}`.trim() : ''}
+${timeZone ? `Timezone: ${timeZone}` : ''}
 ${howDidYouHear ? `\nReferral Source: ${howDidYouHear}` : ''}
 ${description ? `\nAdditional Notes:\n${description}` : ''}
     `.trim()
+
+    // Calculate pricing for interpretation
+    let estimatedPrice = 0
+    let estimatedHours = 0
+    let pricingBreakdown = ''
+    
+    if (serviceType === 'interpretation' && dateTimeEntries && dateTimeEntries.length > 0 && interpretationSetting) {
+      try {
+        const pricingResult = await calculateInterpretationPrice({
+          sourceLanguageId,
+          targetLanguageId,
+          interpretationSetting,
+          state: interpretationState,
+          timeZone,
+          dateTimeEntries: dateTimeEntries.filter((e: { date: string; startTime: string; endTime: string }) => e.date && e.startTime && e.endTime),
+        })
+        
+        if (!pricingResult.error) {
+          estimatedPrice = pricingResult.total
+          estimatedHours = pricingResult.totalHours
+          pricingBreakdown = pricingResult.breakdown.join('\n')
+        }
+      } catch (pricingError) {
+        console.error('Pricing calculation error:', pricingError)
+      }
+    }
 
     // Create the quote
     const quote = await prisma.quote.create({
@@ -142,27 +183,70 @@ ${description ? `\nAdditional Notes:\n${description}` : ''}
         quoteNumber: generateQuoteNumber(),
         customerId: customer.id,
         languagePairId: languagePair.id,
-        status: 'SUBMITTED',
+        status: 'REVIEWING',
+        serviceType: serviceType === 'interpretation' ? 'interpretation' : 'translation',
         
-        sourceLanguage: sourceLanguage.name,
-        targetLanguage: targetLanguage.name,
+        // These are String[] arrays
+        sourceLanguage: [sourceLanguage.name],
+        targetLanguage: [targetLanguage.name],
+        // Also set the relation IDs
+        sourceLanguageId: sourceLanguage.id,
+        targetLanguageId: targetLanguage.id,
         
         description: fullDescription,
         wordCount: wordCount ? parseFloat(wordCount) : null,
         
-        // Pricing will be calculated by admin
-        unitOfIssue: 'word',
-        ratePerUnit: languagePair.ratePerWord,
+        // For interpretation: use estimated pricing
+        // For translation: use language pair rates
+        unitOfIssue: serviceType === 'interpretation' ? 'hour' : 'word',
+        ratePerUnit: serviceType === 'interpretation' && estimatedPrice > 0 
+          ? estimatedPrice / Math.max(estimatedHours, 1)
+          : languagePair.ratePerWord,
         minimumCharge: languagePair.minimumCharge,
+        
+        // Store estimated total for interpretation
+        total: serviceType === 'interpretation' && estimatedPrice > 0 ? estimatedPrice : null,
+        
+        // Store interpretation details in notes/metadata
+        notes: pricingBreakdown || undefined,
       }
     })
 
-    // TODO: Send email notification to admin and customer
-    // await sendQuoteNotificationEmail(quote)
+    // Send quote confirmation email to customer
+    const customerEmail = quoteRequestEmail({
+      firstName,
+      quoteNumber: quote.quoteNumber,
+      serviceType,
+      sourceLanguage: sourceLanguage.name,
+      targetLanguage: targetLanguage.name,
+    })
+    sendEmail({
+      to: email,
+      subject: customerEmail.subject,
+      html: customerEmail.html,
+    }).catch(err => console.error('Quote email to customer failed:', err))
+
+    // Send notification to admin
+    const adminAlert = adminNewOrderEmail({
+      quoteNumber: quote.quoteNumber,
+      customerName: `${firstName} ${lastName}`,
+      customerEmail: email,
+      serviceType,
+      sourceLanguage: sourceLanguage.name,
+      targetLanguage: targetLanguage.name,
+      amount: estimatedPrice, // Include estimated price for interpretation
+      notes: pricingBreakdown ? `${description || ''}\n\nPricing Breakdown:\n${pricingBreakdown}` : description,
+    })
+    sendEmail({
+      to: getAdminEmail(),
+      subject: adminAlert.subject,
+      html: adminAlert.html,
+    }).catch(err => console.error('Quote email to admin failed:', err))
 
     return NextResponse.json({
       success: true,
       quoteNumber: quote.quoteNumber,
+      estimatedPrice: estimatedPrice > 0 ? estimatedPrice : undefined,
       message: 'Quote request submitted successfully. We will contact you within 2 business hours.'
     })
 

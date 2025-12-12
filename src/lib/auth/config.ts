@@ -1,5 +1,6 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import GoogleProvider from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
 import { createHash } from 'crypto'
 import { prisma } from '@/lib/prisma'
@@ -20,6 +21,7 @@ declare module 'next-auth' {
       role: UserRole
       customerId?: string
       linguistId?: string
+      isAdmin?: boolean
     }
   }
   
@@ -46,6 +48,18 @@ declare module 'next-auth/jwt' {
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    // Google OAuth provider for customers
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      authorization: {
+        params: {
+          prompt: 'consent',
+          access_type: 'offline',
+          response_type: 'code'
+        }
+      }
+    }),
     // Admin credentials provider (SugarCRM users)
     CredentialsProvider({
       id: 'admin-credentials',
@@ -139,14 +153,72 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account }) {
+      // Google OAuth sign in - create or update user
+      if (account?.provider === 'google') {
+        try {
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email!.toLowerCase() }
+          })
+
+          if (!existingUser) {
+            // Create new customer user
+            const nameParts = user.name?.split(' ') || ['']
+            const firstName = nameParts[0] || ''
+            const lastName = nameParts.slice(1).join(' ') || ''
+
+            await prisma.user.create({
+              data: {
+                email: user.email!.toLowerCase(),
+                firstName,
+                lastName,
+                password: '', // OAuth users don't have password
+                role: 'CUSTOMER',
+                googleId: account.providerAccountId
+              }
+            })
+          } else if (!existingUser.googleId) {
+            // Link Google account to existing user
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: { googleId: account.providerAccountId }
+            })
+          }
+          return true
+        } catch (error) {
+          console.error('Google sign in error:', error)
+          return false
+        }
+      }
+      return true
+    },
+    async jwt({ token, user, account }) {
+      // Initial sign in
       if (user) {
-        token.id = user.id
-        token.role = user.role
-        token.customerId = user.customerId
-        token.linguistId = user.linguistId
-        // Set isAdmin flag for admin users
-        token.isAdmin = user.role === 'ADMIN'
+        // For OAuth providers, fetch user from database
+        if (account?.provider === 'google') {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email!.toLowerCase() },
+            include: {
+              corporate: { select: { id: true } },
+              linguist: { select: { id: true } }
+            }
+          })
+          if (dbUser) {
+            token.id = dbUser.id
+            token.role = dbUser.role
+            token.customerId = dbUser.corporate?.id
+            token.linguistId = dbUser.linguist?.id
+            token.isAdmin = dbUser.role === 'ADMIN'
+          }
+        } else {
+          // Credentials provider
+          token.id = user.id
+          token.role = user.role
+          token.customerId = user.customerId
+          token.linguistId = user.linguistId
+          token.isAdmin = user.role === 'ADMIN'
+        }
       }
       return token
     },
@@ -156,6 +228,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role
         session.user.customerId = token.customerId
         session.user.linguistId = token.linguistId
+        session.user.isAdmin = token.isAdmin
       }
       return session
     }

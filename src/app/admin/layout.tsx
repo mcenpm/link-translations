@@ -15,7 +15,11 @@ import {
   Building2,
   UserPlus,
   Home,
-  User
+  User,
+  Mic,
+  Mail,
+  FileOutput,
+  MapPin
 } from 'lucide-react'
 
 export default function AdminLayout({
@@ -101,6 +105,13 @@ export default function AdminLayout({
             Linguists
           </Link>
           <Link 
+            href="/admin/linguist-matching" 
+            className={navLinkClass('/admin/linguist-matching')}
+          >
+            <MapPin className="w-5 h-5" />
+            Linguist Matching
+          </Link>
+          <Link 
             href="/admin/quotes" 
             className={navLinkClass('/admin/quotes')}
           >
@@ -115,11 +126,36 @@ export default function AdminLayout({
             Projects
           </Link>
           <Link 
+            href="/admin/interpretation" 
+            className={navLinkClass('/admin/interpretation')}
+          >
+            <Mic className="w-5 h-5" />
+            Interpretation
+          </Link>
+          <Link 
             href="/admin/pricing" 
             className={navLinkClass('/admin/pricing')}
           >
             <DollarSign className="w-5 h-5" />
             Pricing
+          </Link>
+          
+          {/* Divider */}
+          <div className="my-2 border-t border-gray-800" />
+          
+          <Link 
+            href="/admin/email-templates" 
+            className={navLinkClass('/admin/email-templates')}
+          >
+            <Mail className="w-5 h-5" />
+            Email Templates
+          </Link>
+          <Link 
+            href="/admin/pdf-templates" 
+            className={navLinkClass('/admin/pdf-templates')}
+          >
+            <FileOutput className="w-5 h-5" />
+            PDF Templates
           </Link>
           <Link 
             href="/admin/settings" 

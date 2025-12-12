@@ -232,7 +232,7 @@ async function main() {
   }
   
   // Process single language quotes - use CRM fields directly
-  for (const [key, entry] of quoteLanguages.entries()) {
+  for (const [, entry] of quoteLanguages.entries()) {
     if (!entry.isMultiple) {
       // Single language: source = CRM source (or "English"), target = languageRequested
       const source = entry.crmSourceLang && entry.crmSourceLang !== 'NULL' 
