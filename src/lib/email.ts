@@ -99,7 +99,7 @@ export async function sendTemplateEmail({
     // Send the email
     const toAddresses = Array.isArray(to) ? to : [to]
     
-    if (!process.env.RESEND_API_KEY) {
+    if (!resend) {
       console.log('📧 Template email skipped (no API key):', { templateSlug, to, subject })
       
       // Still log the email even if not sent

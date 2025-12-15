@@ -59,8 +59,11 @@ async function main() {
       phone: '555-987-6543',
       linguist: {
         create: {
+          firstName: 'Maria',
+          lastName: 'Garcia',
+          email: 'linguist@linktranslations.com',
           bio: 'Professional certified translator with 10+ years of experience.',
-          experience: 10,
+          experience: '10 years',
           isActive: true,
           isVerified: true,
         },

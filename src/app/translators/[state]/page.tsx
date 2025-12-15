@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams, useParams } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { MapPin, Star, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
@@ -17,7 +17,18 @@ interface Linguist {
   averageRating?: number
 }
 
-export default function TranslatorsPage() {
+function LoadingSpinner() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    </div>
+  )
+}
+
+function TranslatorsContent() {
   const searchParams = useSearchParams()
   const params = useParams()
   const [linguists, setLinguists] = useState<Linguist[]>([])
@@ -140,5 +151,13 @@ export default function TranslatorsPage() {
         )}
       </main>
     </div>
+  )
+}
+
+export default function TranslatorsPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <TranslatorsContent />
+    </Suspense>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle2, FileText, ArrowRight, Mail, Phone, Loader2 } from 'lucide-react'
@@ -13,7 +13,18 @@ interface PaymentDetails {
   projectId?: string
 }
 
-export default function QuoteSuccessPage() {
+function LoadingSpinner() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    </div>
+  )
+}
+
+function QuoteSuccessContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
   const [loading, setLoading] = useState(true)
@@ -175,5 +186,13 @@ export default function QuoteSuccessPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function QuoteSuccessPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <QuoteSuccessContent />
+    </Suspense>
   )
 }

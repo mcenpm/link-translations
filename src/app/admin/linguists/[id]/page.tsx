@@ -33,6 +33,8 @@ interface Linguist {
   portfolioUrl: string | null
   languages: string[]
   nativeLanguage: string | null
+  totalQuotesCompleted: number
+  averageRating: number | null
   createdAt: string
   updatedAt: string
   user?: {
@@ -335,13 +337,13 @@ export default function LinguistDetailPage({ params }: { params: Promise<{ id: s
               <div className="flex justify-between">
                 <span className="text-gray-500">Rate per Word</span>
                 <span className="text-gray-900 font-medium">
-                  ${linguist.defaultRatePerWord?.toFixed(4) || '0.00'}
+                  ${linguist.ratePerWord?.toFixed(4) || '0.00'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Minimum Charge</span>
                 <span className="text-gray-900 font-medium">
-                  ${linguist.defaultMinimumCharge?.toFixed(2) || '0.00'}
+                  ${linguist.minimumCharge?.toFixed(2) || '0.00'}
                 </span>
               </div>
             </div>

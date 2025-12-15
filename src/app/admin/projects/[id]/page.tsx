@@ -28,7 +28,7 @@ interface Project {
   projectNumber: string
   name: string | null
   description: string | null
-  status: 'IN_PROGRESS' | 'PAUSED' | 'REMOVED' | 'COMPLETED'
+  status: 'IN_PROGRESS' | 'PAUSED' | 'REMOVED' | 'COMPLETED' | 'SEEKING_INTERPRETER' | 'INTERPRETER_ASSIGNED'
   startDate: string
   dueDate: string | null
   completedDate: string | null
@@ -62,6 +62,8 @@ const statusConfig = {
   PAUSED: { label: 'Paused', color: 'bg-yellow-100 text-yellow-800', icon: PauseCircle },
   REMOVED: { label: 'Removed', color: 'bg-red-100 text-red-800', icon: XCircle },
   COMPLETED: { label: 'Completed', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+  SEEKING_INTERPRETER: { label: 'Seeking Interpreter', color: 'bg-orange-100 text-orange-800', icon: Clock },
+  INTERPRETER_ASSIGNED: { label: 'Interpreter Assigned', color: 'bg-purple-100 text-purple-800', icon: CheckCircle },
 }
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -74,7 +76,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [editData, setEditData] = useState({
     name: '',
     description: '',
-    status: 'IN_PROGRESS' as 'IN_PROGRESS' | 'PAUSED' | 'REMOVED' | 'COMPLETED',
+    status: 'IN_PROGRESS' as 'IN_PROGRESS' | 'PAUSED' | 'REMOVED' | 'COMPLETED' | 'SEEKING_INTERPRETER' | 'INTERPRETER_ASSIGNED',
     dueDate: '',
     notes: '',
     internalNotes: '',
@@ -277,7 +279,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 Resume
               </button>
             )}
-            {project.status !== 'PAUSED' && project.status !== 'COMPLETED' && (
+            {!['PAUSED', 'COMPLETED'].includes(project.status) && (
               <button
                 onClick={() => handleQuickStatusChange('PAUSED')}
                 className="flex items-center gap-2 px-3 py-2 text-sm text-yellow-700 bg-yellow-50 rounded-lg hover:bg-yellow-100"

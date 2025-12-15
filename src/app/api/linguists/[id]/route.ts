@@ -141,7 +141,7 @@ export async function PATCH(
       data: body,
       include: {
         user: true,
-        languages: {
+        linguistLanguages: {
           include: {
             language: true,
           },

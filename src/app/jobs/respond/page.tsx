@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
@@ -17,7 +17,18 @@ interface JobDetails {
   distance: number | null
 }
 
-export default function JobResponsePage() {
+function LoadingSpinner() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    </div>
+  )
+}
+
+function JobResponseContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
   const action = searchParams.get('action')
@@ -100,17 +111,12 @@ export default function JobResponsePage() {
   }, [token])
 
   useEffect(() => {
-    // Skip effect and handle invalid state in render
     if (!token || !action || hasInitialized.current) {
       return
     }
 
-    // Mark as initialized to prevent double execution
     hasInitialized.current = true
 
-    // If action is accept, submit immediately
-    // If action is decline, show form first
-    // Use setTimeout to avoid synchronous setState in effect
     if (action === 'accept') {
       setTimeout(() => submitResponse('accept'), 0)
     } else if (action === 'decline') {
@@ -118,7 +124,6 @@ export default function JobResponsePage() {
     }
   }, [token, action, submitResponse, fetchJobDetails])
 
-  // Handle invalid states in render instead of effect
   if (!token) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -158,7 +163,6 @@ export default function JobResponsePage() {
     )
   }
 
-  // Decline form
   if (showDeclineForm && jobDetails) {
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4">
@@ -230,7 +234,6 @@ export default function JobResponsePage() {
     )
   }
 
-  // Success state
   if (status === 'success') {
     const isAccepted = action === 'accept' || message.includes('accepted')
     return (
@@ -285,7 +288,6 @@ export default function JobResponsePage() {
     )
   }
 
-  // Error states
   const iconConfig = {
     expired: { icon: Clock, color: 'yellow', bg: 'bg-yellow-100', iconColor: 'text-yellow-600' },
     already_responded: { icon: AlertCircle, color: 'blue', bg: 'bg-blue-100', iconColor: 'text-blue-600' },
@@ -315,5 +317,13 @@ export default function JobResponsePage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function JobResponsePage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <JobResponseContent />
+    </Suspense>
   )
 }
