@@ -714,8 +714,12 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
   // Review step fields
   const [couponCode, setCouponCode] = useState('')
   const [referenceNumber, setReferenceNumber] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'invoice'>('card')
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'payment-code' | null>(null)
+  const [paymentCode, setPaymentCode] = useState('')
+  const [paymentCodeError, setPaymentCodeError] = useState('')
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  const [createdQuoteId, setCreatedQuoteId] = useState('')
+  const [corporatePaymentEnabled, setCorporatePaymentEnabled] = useState(false)
   
   // Auth mode for contact step: null = choose, 'signin' = sign in form, 'signup' = sign up form
   const [authMode, setAuthMode] = useState<'signin' | 'signup' | null>(null)
@@ -874,6 +878,119 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
       setFormData(prev => ({ ...prev, serviceType: initialService }))
     }
   }, [initialService])
+
+  // Check for saved form data after Google login callback
+  useEffect(() => {
+    if (session?.user && typeof window !== 'undefined') {
+      const savedData = localStorage.getItem('quoteFormData')
+      const savedPricing = localStorage.getItem('quotePricingData')
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData)
+          setFormData(parsed)
+          
+          // Restore pricing data if available
+          if (savedPricing) {
+            try {
+              const parsedPricing = JSON.parse(savedPricing)
+              setPricing({ loading: false, error: null, data: parsedPricing })
+              localStorage.removeItem('quotePricingData')
+            } catch {
+              // Pricing will be recalculated
+            }
+          }
+          
+          // Move to review step
+          const isCustomer = (session.user as { role?: string }).role === 'CUSTOMER'
+          const reviewStep = isCustomer ? 3 : 4
+          setCurrentStep(reviewStep as Step)
+          
+          localStorage.removeItem('quoteFormData')
+        } catch {
+          localStorage.removeItem('quoteFormData')
+          localStorage.removeItem('quotePricingData')
+        }
+      }
+    }
+  }, [session])
+
+  // Create quote when entering review step
+  useEffect(() => {
+    const createQuoteOnReview = async () => {
+      const isCustomer = (session?.user as { role?: string })?.role === 'CUSTOMER'
+      const reviewStep = isCustomer ? 3 : 4
+      
+      // Only create quote if we're on review step, have session, pricing data, and haven't created quote yet
+      if (
+        currentStep === reviewStep && 
+        session?.user && 
+        pricing.data && 
+        !createdQuoteId &&
+        !isSubmitting
+      ) {
+        try {
+          // Build submit data
+          const submitData = {
+            firstName: formData.firstName || session.user.name?.split(' ')[0] || '',
+            lastName: formData.lastName || session.user.name?.split(' ').slice(1).join(' ') || '',
+            email: formData.email || session.user.email || '',
+            phone: formData.phone || '',
+            company: formData.company || '',
+            serviceType: formData.serviceType,
+            sourceLanguageId: formData.sourceLanguageId,
+            targetLanguageId: formData.targetLanguageId,
+            interpretationSetting: formData.interpretationSetting,
+            interpretationMode: formData.interpretationMode,
+            subjectMatter: formData.subjectMatter,
+            interpretationCity: formData.interpretationCity,
+            interpretationState: formData.interpretationState,
+            timeZone: formData.timeZone,
+            dateTimeEntries: formData.dateTimeEntries,
+            description: formData.description,
+            pricingData: pricing.data,
+          }
+
+          const response = await fetch('/api/quote-request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(submitData)
+          })
+
+          const data = await response.json()
+
+          if (response.ok && data.success) {
+            setQuoteNumber(data.quoteNumber)
+            setCreatedQuoteId(data.quoteId)
+            
+            // Update URL to quote page
+            window.history.replaceState({}, '', `/quote/${data.quoteNumber}`)
+          }
+        } catch (error) {
+          console.error('Failed to create quote on review:', error)
+        }
+      }
+    }
+
+    createQuoteOnReview()
+  }, [currentStep, session, pricing.data, createdQuoteId, isSubmitting, formData])
+
+  // Check if corporate has payment code enabled
+  useEffect(() => {
+    const checkCorporatePayment = async () => {
+      if (session?.user && (session.user as { role?: string }).role === 'CUSTOMER') {
+        try {
+          const response = await fetch('/api/customer/payment-settings')
+          if (response.ok) {
+            const data = await response.json()
+            setCorporatePaymentEnabled(data.paymentCodeEnabled || false)
+          }
+        } catch {
+          setCorporatePaymentEnabled(false)
+        }
+      }
+    }
+    checkCorporatePayment()
+  }, [session])
 
   // Auto-populate contact info from session if logged in
   useEffect(() => {
@@ -1149,55 +1266,87 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
     setErrorMessage('')
 
     try {
-      // If customer is logged in, use session data for contact info
-      const submitData = isCustomerLoggedIn && session?.user ? {
-        ...formData,
-        firstName: session.user.name?.split(' ')[0] || formData.firstName || 'Customer',
-        lastName: session.user.name?.split(' ').slice(1).join(' ') || formData.lastName || '',
-        email: session.user.email || formData.email,
-        phone: formData.phone || 'Not provided',
-        couponCode,
-        referenceNumber,
-        paymentMethod,
-        pricingData: pricing.data,
-      } : {
-        ...formData,
-        couponCode,
-        referenceNumber,
-        paymentMethod,
-        pricingData: pricing.data,
-      }
+      let quoteId = createdQuoteId
+      let currentQuoteNumber = quoteNumber
 
-      // Step 1: Create quote in database
-      const quoteResponse = await fetch('/api/quote-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submitData)
-      })
+      // Only create quote if not already created
+      if (!quoteId) {
+        // If customer is logged in, use session data for contact info
+        const submitData = isCustomerLoggedIn && session?.user ? {
+          ...formData,
+          firstName: session.user.name?.split(' ')[0] || formData.firstName || 'Customer',
+          lastName: session.user.name?.split(' ').slice(1).join(' ') || formData.lastName || '',
+          email: session.user.email || formData.email,
+          phone: formData.phone || 'Not provided',
+          couponCode,
+          referenceNumber,
+          paymentMethod,
+          pricingData: pricing.data,
+        } : {
+          ...formData,
+          couponCode,
+          referenceNumber,
+          paymentMethod,
+          pricingData: pricing.data,
+        }
 
-      const quoteData = await quoteResponse.json()
+        // Create quote in database
+        const quoteResponse = await fetch('/api/quote-request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(submitData)
+        })
 
-      if (!quoteResponse.ok || !quoteData.success) {
-        throw new Error(quoteData.error || 'Failed to create quote')
-      }
+        const quoteData = await quoteResponse.json()
 
-      // If invoice payment method, skip Stripe and show success
-      if (paymentMethod === 'invoice') {
-        setSubmitStatus('success')
+        if (!quoteResponse.ok || !quoteData.success) {
+          throw new Error(quoteData.error || 'Failed to create quote')
+        }
+
+        // Store the created quote info
+        quoteId = quoteData.quoteId
+        currentQuoteNumber = quoteData.quoteNumber
         setQuoteNumber(quoteData.quoteNumber)
-        setProjectId(quoteData.projectId || '')
+        setCreatedQuoteId(quoteData.quoteId)
+        
+        // Update URL to include quote number (without page reload)
+        window.history.replaceState({}, '', `/quote/${quoteData.quoteNumber}`)
+      }
+
+      // If payment code method, validate and process
+      if (paymentMethod === 'payment-code') {
+        // Validate payment code
+        const validateResponse = await fetch('/api/customer/validate-payment-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentCode, quoteId })
+        })
+        
+        const validateData = await validateResponse.json()
+        
+        if (!validateResponse.ok || !validateData.valid) {
+          setPaymentCodeError(validateData.error || 'Invalid payment code')
+          throw new Error(validateData.error || 'Invalid payment code')
+        }
+        
+        // Payment code valid - mark as paid and redirect to dashboard
+        setSubmitStatus('success')
+        router.push('/customer/dashboard')
         return
       }
 
-      // Step 2: Create Stripe checkout session
+      // Create Stripe checkout session for card payment
+      const customerEmail = session?.user?.email || formData.email
+      const customerName = session?.user?.name || `${formData.firstName} ${formData.lastName}`
+      
       const checkoutResponse = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          quoteId: quoteData.quoteId,
+          quoteId,
           amount: pricing.data?.total || 0,
-          customerEmail: submitData.email,
-          customerName: `${submitData.firstName} ${submitData.lastName}`,
+          customerEmail,
+          customerName,
           description: `Interpretation Service - ${languages.find(l => l.id === formData.sourceLanguageId)?.name} to ${languages.find(l => l.id === formData.targetLanguageId)?.name}`,
         })
       })
@@ -1208,7 +1357,7 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
         throw new Error(checkoutData.error || 'Failed to create checkout session')
       }
 
-      // Step 3: Redirect to Stripe Checkout
+      // Redirect to Stripe Checkout
       window.location.href = checkoutData.url
 
     } catch (error) {
@@ -1292,54 +1441,58 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pt-28 pb-12">
       <div className="container mx-auto px-4">
-        <div className="max-w-xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Get a Free Quote
-            </h1>
-            <p className="text-sm text-gray-600">
-              Tell us about your project and we&apos;ll provide a detailed quote within 2 hours.
-            </p>
-          </div>
-
-          {/* Progress Steps */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between relative">
-              {/* Progress Line */}
-              <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200">
-                <div 
-                  className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-500"
-                  style={{ width: `${((currentStep - 1) / 3) * 100}%` }}
-                />
-              </div>
-              
-              {steps.map((step) => {
-                const Icon = step.icon
-                const isCompleted = currentStep > step.number
-                const isCurrent = currentStep === step.number
-                
-                return (
-                  <div key={step.number} className="relative flex flex-col items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
-                      isCompleted 
-                        ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md' 
-                        : isCurrent 
-                          ? 'bg-white border-2 border-blue-600 text-blue-600 shadow-md' 
-                          : 'bg-white border-2 border-gray-200 text-gray-400'
-                    }`}>
-                      {isCompleted ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
-                    </div>
-                    <span className={`mt-1 text-xs font-medium ${
-                      isCurrent ? 'text-blue-600' : isCompleted ? 'text-gray-900' : 'text-gray-400'
-                    }`}>
-                      {step.title}
-                    </span>
-                  </div>
-                )
-              })}
+        <div className={`mx-auto transition-all duration-300 ${isReviewStep ? 'max-w-4xl' : 'max-w-xl'}`}>
+          {/* Header - Hide on Review step */}
+          {!isReviewStep && (
+            <div className="text-center mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                Get a Free Quote
+              </h1>
+              <p className="text-sm text-gray-600">
+                Tell us about your project and we&apos;ll provide a detailed quote within 2 hours.
+              </p>
             </div>
-          </div>
+          )}
+
+          {/* Progress Steps - Hide on Review step */}
+          {!isReviewStep && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between relative">
+                {/* Progress Line */}
+                <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-500"
+                    style={{ width: `${((currentStep - 1) / 3) * 100}%` }}
+                  />
+                </div>
+                
+                {steps.map((step) => {
+                  const Icon = step.icon
+                  const isCompleted = currentStep > step.number
+                  const isCurrent = currentStep === step.number
+                  
+                  return (
+                    <div key={step.number} className="relative flex flex-col items-center">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+                        isCompleted 
+                          ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md' 
+                          : isCurrent 
+                            ? 'bg-white border-2 border-blue-600 text-blue-600 shadow-md' 
+                            : 'bg-white border-2 border-gray-200 text-gray-400'
+                      }`}>
+                        {isCompleted ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+                      </div>
+                      <span className={`mt-1 text-xs font-medium ${
+                        isCurrent ? 'text-blue-600' : isCompleted ? 'text-gray-900' : 'text-gray-400'
+                      }`}>
+                        {step.title}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Form Card */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
@@ -2340,8 +2493,11 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                         <button
                           type="button"
                           onClick={async () => {
-                            // Save form data before auth
+                            // Save form data and pricing before auth
                             localStorage.setItem('quoteFormData', JSON.stringify(formData));
+                            if (pricing.data) {
+                              localStorage.setItem('quotePricingData', JSON.stringify(pricing.data));
+                            }
                             setAuthLoading(true);
                             setAuthError('');
                             try {
@@ -2397,6 +2553,11 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                         <button
                           type="button"
                           onClick={async () => {
+                            // Save form data and pricing before Google auth
+                            localStorage.setItem('quoteFormData', JSON.stringify(formData));
+                            if (pricing.data) {
+                              localStorage.setItem('quotePricingData', JSON.stringify(pricing.data));
+                            }
                             const { signIn } = await import('next-auth/react');
                             signIn('google', { callbackUrl: window.location.href });
                           }}
@@ -2547,6 +2708,11 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                         <button
                           type="button"
                           onClick={async () => {
+                            // Save form data and pricing before Google auth
+                            localStorage.setItem('quoteFormData', JSON.stringify(formData));
+                            if (pricing.data) {
+                              localStorage.setItem('quotePricingData', JSON.stringify(pricing.data));
+                            }
                             const { signIn } = await import('next-auth/react');
                             signIn('google', { callbackUrl: window.location.href });
                           }}
@@ -2575,9 +2741,9 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                   </div>
 
                   {/* Two Column Layout - Reference Design */}
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {/* Left Column - Price & Details Summary */}
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                  <div className="grid md:grid-cols-5 gap-6">
+                    {/* Left Column - Price & Details Summary (2/5) */}
+                    <div className="md:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                       {/* Price Header */}
                       <div className="bg-gradient-to-br from-emerald-500 to-green-600 p-6 text-white">
                         <div className="text-4xl font-bold mb-2">
@@ -2675,8 +2841,8 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                       </div>
                     </div>
                     
-                    {/* Right Column - Notes, Coupon, Payment */}
-                    <div className="space-y-4">
+                    {/* Right Column - Notes, Coupon, Payment (3/5) */}
+                    <div className="md:col-span-3 space-y-4">
                       {/* Notes */}
                       <div className="bg-white rounded-xl p-4 border border-gray-200">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2720,7 +2886,7 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                       <div className="bg-white rounded-xl p-4 border border-gray-200">
                         <label className="block text-sm font-medium text-gray-700 mb-3">Payment method</label>
                         <div className="space-y-2">
-                          <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                          <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${paymentMethod === 'card' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
                             <input
                               type="radio"
                               name="paymentMethod"
@@ -2735,17 +2901,48 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                               <div className="w-8 h-5 bg-gradient-to-r from-red-500 to-orange-500 rounded text-white text-[8px] flex items-center justify-center font-bold">MC</div>
                             </div>
                           </label>
-                          <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                            <input
-                              type="radio"
-                              name="paymentMethod"
-                              value="invoice"
-                              checked={paymentMethod === 'invoice'}
-                              onChange={() => setPaymentMethod('invoice')}
-                              className="w-4 h-4 text-blue-600"
-                            />
-                            <span className="text-sm text-gray-700">Request invoice (corporate accounts)</span>
-                          </label>
+                          
+                          {/* Payment Code option - only shown for corporates with this feature enabled */}
+                          {corporatePaymentEnabled && (
+                            <div>
+                              <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${paymentMethod === 'payment-code' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
+                                <input
+                                  type="radio"
+                                  name="paymentMethod"
+                                  value="payment-code"
+                                  checked={paymentMethod === 'payment-code'}
+                                  onChange={() => setPaymentMethod('payment-code')}
+                                  className="w-4 h-4 text-blue-600"
+                                />
+                                <span className="text-sm text-gray-700">Pay by Payment Code</span>
+                                <div className="ml-auto">
+                                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                  </svg>
+                                </div>
+                              </label>
+                              
+                              {/* Payment Code Input */}
+                              {paymentMethod === 'payment-code' && (
+                                <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">Enter your payment code</label>
+                                  <input
+                                    type="text"
+                                    value={paymentCode}
+                                    onChange={(e) => {
+                                      setPaymentCode(e.target.value.toUpperCase())
+                                      setPaymentCodeError('')
+                                    }}
+                                    placeholder="e.g. CORP-2024-XXXX"
+                                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent ${paymentCodeError ? 'border-red-300' : 'border-gray-200'}`}
+                                  />
+                                  {paymentCodeError && (
+                                    <p className="mt-1 text-xs text-red-500">{paymentCodeError}</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                       
@@ -2753,7 +2950,7 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                       <button
                         type="button"
                         onClick={handleSubmit}
-                        disabled={isSubmitting || isProcessingPayment || !pricing.data}
+                        disabled={isSubmitting || isProcessingPayment || !pricing.data || !(pricing.data.total > 0) || !paymentMethod || (paymentMethod === 'payment-code' && !paymentCode)}
                         className="w-full py-4 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-lg rounded-xl hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2"
                       >
                         {isSubmitting || isProcessingPayment ? (
@@ -2781,7 +2978,28 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                   
                   {/* Bottom Actions */}
                   <div className="flex items-center justify-center gap-4 pt-4 border-t border-gray-100">
-                    <button className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-sm">
+                    <button 
+                      onClick={async () => {
+                        const quoteUrl = quoteNumber 
+                          ? `${window.location.origin}/quote/${quoteNumber}`
+                          : window.location.href
+                        if (navigator.share) {
+                          try {
+                            await navigator.share({
+                              title: `Quote ${quoteNumber ? `#${quoteNumber}` : ''}`,
+                              text: `Check out my quote from Link Translations`,
+                              url: quoteUrl,
+                            })
+                          } catch {
+                            // User cancelled or share failed
+                          }
+                        } else {
+                          await navigator.clipboard.writeText(quoteUrl)
+                          alert('Quote link copied to clipboard!')
+                        }
+                      }}
+                      className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-sm"
+                    >
                       <Share2 className="w-4 h-4" />
                       Share
                     </button>
@@ -2792,7 +3010,78 @@ export default function QuoteWizard({ languages }: QuoteWizardProps) {
                       <FileText className="w-4 h-4" />
                       Edit Quote
                     </button>
-                    <button className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-sm">
+                    <button 
+                      onClick={async () => {
+                        // Generate a simple PDF quote
+                        const sourceLanguageName = languages.find(l => l.id === formData.sourceLanguageId)?.name || 'Source'
+                        const targetLanguageName = languages.find(l => l.id === formData.targetLanguageId)?.name || 'Target'
+                        
+                        // Create a printable HTML
+                        const printContent = `
+                          <!DOCTYPE html>
+                          <html>
+                          <head>
+                            <title>Quote ${quoteNumber ? `#${quoteNumber}` : ''}</title>
+                            <style>
+                              body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+                              .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #2563eb; padding-bottom: 20px; }
+                              .header h1 { color: #2563eb; margin: 0; }
+                              .header p { color: #666; margin-top: 5px; }
+                              .quote-number { background: #f3f4f6; padding: 10px 20px; border-radius: 8px; display: inline-block; margin: 20px 0; }
+                              .section { margin: 20px 0; }
+                              .section h3 { color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
+                              .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+                              .total { font-size: 24px; font-weight: bold; color: #059669; text-align: right; margin-top: 20px; }
+                              .footer { margin-top: 40px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 20px; }
+                            </style>
+                          </head>
+                          <body>
+                            <div class="header">
+                              <h1>LINK TRANSLATIONS</h1>
+                              <p>Professional Translation & Interpretation Services</p>
+                            </div>
+                            
+                            ${quoteNumber ? `<div class="quote-number"><strong>Quote #${quoteNumber}</strong></div>` : ''}
+                            
+                            <div class="section">
+                              <h3>Service Details</h3>
+                              <div class="detail-row"><span>Service Type:</span><span>Interpretation</span></div>
+                              <div class="detail-row"><span>Languages:</span><span>${sourceLanguageName} → ${targetLanguageName}</span></div>
+                              <div class="detail-row"><span>Mode:</span><span>${formData.interpretationMode || 'Consecutive'}</span></div>
+                              <div class="detail-row"><span>Setting:</span><span>${formData.interpretationSetting === 'in-person' ? 'In-Person' : formData.interpretationSetting === 'video-remote' ? 'Video Remote' : 'Phone'}</span></div>
+                              ${formData.interpretationCity ? `<div class="detail-row"><span>Location:</span><span>${formData.interpretationCity}, ${formData.interpretationState}</span></div>` : ''}
+                              <div class="detail-row"><span>Duration:</span><span>${pricing.data?.totalHours || 0} hours</span></div>
+                              ${formData.dateTimeEntries[0]?.date ? `<div class="detail-row"><span>Date:</span><span>${formData.dateTimeEntries[0].date} at ${formData.dateTimeEntries[0].startTime}</span></div>` : ''}
+                            </div>
+                            
+                            <div class="section">
+                              <h3>Pricing</h3>
+                              <div class="detail-row"><span>Hourly Rate:</span><span>$${pricing.data?.hourlyRate?.toFixed(2) || '0.00'}/hr</span></div>
+                              <div class="detail-row"><span>Hours:</span><span>${pricing.data?.totalHours || 0} hours</span></div>
+                              ${pricing.data?.travelFee ? `<div class="detail-row"><span>Travel Fee:</span><span>$${pricing.data.travelFee.toFixed(2)}</span></div>` : ''}
+                              ${pricing.data?.rushFee ? `<div class="detail-row"><span>Rush Fee:</span><span>$${pricing.data.rushFee.toFixed(2)}</span></div>` : ''}
+                            </div>
+                            
+                            <div class="total">Total: $${pricing.data?.total?.toFixed(2) || '0.00'}</div>
+                            
+                            <div class="footer">
+                              <p>Link Translations | 1-877-272-LINK (5465) | info@linktranslations.com</p>
+                              <p>This quote is valid for 7 days from the date of issue.</p>
+                            </div>
+                          </body>
+                          </html>
+                        `
+                        
+                        // Open print dialog
+                        const printWindow = window.open('', '_blank')
+                        if (printWindow) {
+                          printWindow.document.write(printContent)
+                          printWindow.document.close()
+                          printWindow.print()
+                        }
+                      }}
+                      className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-sm"
+                    >
                       <Download className="w-4 h-4" />
                       Download Quote
                     </button>

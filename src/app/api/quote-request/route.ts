@@ -4,14 +4,28 @@ import { sendEmail, getAdminEmail } from '@/lib/email'
 import { quoteRequestEmail, adminNewOrderEmail } from '@/lib/email-templates'
 import { calculateInterpretationPrice } from '@/lib/pricing/interpretation'
 
-// Generate unique quote number
-function generateQuoteNumber() {
-  const date = new Date()
-  const year = date.getFullYear().toString().slice(-2)
-  const month = (date.getMonth() + 1).toString().padStart(2, '0')
-  const day = date.getDate().toString().padStart(2, '0')
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
-  return `Q${year}${month}${day}-${random}`
+// Generate sequential quote number continuing from highest existing
+async function generateQuoteNumber(): Promise<string> {
+  // Find the highest numeric quote number
+  const quotes = await prisma.quote.findMany({
+    select: { quoteNumber: true },
+    orderBy: { createdAt: 'desc' },
+    take: 1000, // Check recent quotes
+  })
+  
+  let maxNumber = 45733 // Start from last known number if no quotes found
+  
+  for (const quote of quotes) {
+    if (quote.quoteNumber) {
+      // Try to parse as pure number (e.g., "45733")
+      const num = parseInt(quote.quoteNumber, 10)
+      if (!isNaN(num) && num > maxNumber) {
+        maxNumber = num
+      }
+    }
+  }
+  
+  return (maxNumber + 1).toString()
 }
 
 // POST: Submit a new quote request from public form
@@ -55,7 +69,7 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Validate required fields
-    if (!firstName || !lastName || !email || !phone || !serviceType || !sourceLanguageId || !targetLanguageId) {
+    if (!firstName || !lastName || !email || !serviceType || !sourceLanguageId || !targetLanguageId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -180,7 +194,7 @@ ${description ? `\nAdditional Notes:\n${description}` : ''}
     // Create the quote
     const quote = await prisma.quote.create({
       data: {
-        quoteNumber: generateQuoteNumber(),
+        quoteNumber: await generateQuoteNumber(),
         customerId: customer.id,
         languagePairId: languagePair.id,
         status: 'REVIEWING',
@@ -245,6 +259,7 @@ ${description ? `\nAdditional Notes:\n${description}` : ''}
 
     return NextResponse.json({
       success: true,
+      quoteId: quote.id,
       quoteNumber: quote.quoteNumber,
       estimatedPrice: estimatedPrice > 0 ? estimatedPrice : undefined,
       message: 'Quote request submitted successfully. We will contact you within 2 business hours.'

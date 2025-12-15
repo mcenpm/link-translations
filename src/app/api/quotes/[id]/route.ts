@@ -8,7 +8,8 @@ export async function GET(
   const { id } = await params
   
   try {
-    const quote = await prisma.quote.findUnique({
+    // Try to find by ID first, then by quoteNumber
+    let quote = await prisma.quote.findUnique({
       where: { id },
       include: {
         corporate: {
@@ -53,6 +54,55 @@ export async function GET(
         },
       },
     })
+
+    // If not found by ID, try by quoteNumber
+    if (!quote) {
+      quote = await prisma.quote.findFirst({
+        where: { quoteNumber: id },
+        include: {
+          corporate: {
+            include: {
+              user: {
+                select: {
+                  email: true,
+                  firstName: true,
+                  lastName: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+          languagePair: {
+            include: {
+              sourceLanguage: true,
+              targetLanguage: true,
+            },
+          },
+          assignments: {
+            include: {
+              linguist: {
+                include: {
+                  user: {
+                    select: {
+                      firstName: true,
+                      lastName: true,
+                      email: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          project: {
+            select: {
+              id: true,
+              projectNumber: true,
+              status: true,
+            }
+          },
+        },
+      })
+    }
 
     if (!quote) {
       return NextResponse.json({ error: 'Quote not found' }, { status: 404 })

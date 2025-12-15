@@ -11,9 +11,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { quoteId, amount, customerEmail, customerName, description } = body
 
-    if (!quoteId || !amount) {
+    if (!quoteId) {
       return NextResponse.json(
-        { error: 'Quote ID and amount are required' },
+        { error: 'Quote ID is required' },
+        { status: 400 }
+      )
+    }
+
+    if (amount === undefined || amount === null || amount <= 0) {
+      return NextResponse.json(
+        { error: 'Valid amount is required (must be greater than 0)' },
         { status: 400 }
       )
     }

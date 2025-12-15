@@ -44,34 +44,36 @@ model User {
 }
 
 model Corporate {
-  id              String    @id @default(cuid())
-  customerNumber  Int?      @unique // Sequential customer number
-  legacyId        String?   @unique // SugarCRM account id
-  userId          String    @unique
-  company         String
-  website         String?
-  industry        String?
-  billingAddress  String?
-  billingCity     String?
-  billingState    String?
-  billingZip      String?
-  billingCountry  String?
-  shippingAddress String?
-  shippingCity    String?
-  shippingState   String?
-  shippingZip     String?
-  shippingCountry String?
-  taxId           String?
-  paymentTerms    String?
-  creditLimit     Float?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  contacts        Contact[]
-  invoices        Invoice[]
-  orders          Order[]
-  quotes          Quote[]
-  projects        Project[]
+  id                  String    @id @default(cuid())
+  customerNumber      Int?      @unique // Sequential customer number
+  legacyId            String?   @unique // SugarCRM account id
+  userId              String    @unique
+  company             String
+  website             String?
+  industry            String?
+  billingAddress      String?
+  billingCity         String?
+  billingState        String?
+  billingZip          String?
+  billingCountry      String?
+  shippingAddress     String?
+  shippingCity        String?
+  shippingState       String?
+  shippingZip         String?
+  shippingCountry     String?
+  taxId               String?
+  paymentTerms        String?
+  creditLimit         Float?
+  paymentCodeEnabled  Boolean   @default(false) // Allow payment by code
+  paymentCode         String?   // The payment code for this corporate
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contacts            Contact[]
+  invoices            Invoice[]
+  orders              Order[]
+  quotes              Quote[]
+  projects            Project[]
 
   @@map("Customer")
   @@index([userId])
